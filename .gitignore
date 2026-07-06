@@ -1,6 +1,9 @@
 # API Key
 .env
 
+# AI 内部指令
+AGENTS.md
+
 # Python
 __pycache__/
 *.pyc
