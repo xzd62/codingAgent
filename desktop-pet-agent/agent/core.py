@@ -28,8 +28,21 @@ class Agent:
     def _setup_system_prompt(self):
         memories = self._ltm.load()
         full_prompt = SYSTEM_PROMPT
+
+        # TODO: 你写 — 加载 soul.md 拼入 system prompt
+        # 提示: from config.settings import get_soul
+        #       如果有 soul 内容，拼在前面:
+        #       full_prompt = soul + "\n\n" + full_prompt
+        from config.settings import get_soul
+
+        soul = get_soul()
+        if soul:
+            full_prompt += f"\n\n## 桌宠灵魂\n{soul}"
+
+
         if memories:
             full_prompt += f"\n\n## 长期记忆\n{memories}"
+
         self._stm.add_system(full_prompt)
 
     def process(self, user_input: str) -> str:

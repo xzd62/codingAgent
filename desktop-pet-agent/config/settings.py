@@ -29,7 +29,7 @@ LLM_MODEL = os.getenv("LLM_MODEL", "deepseek-chat")
 LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0.7"))
 LLM_TIMEOUT = int(os.getenv("LLM_TIMEOUT", "60"))
 
-SYSTEM_PROMPT = "你是一个代码桌宠，可以帮助用户写代码，也能和用户闲聊。"
+SYSTEM_PROMPT = "你是一个代码桌宠，你将根据用户的需要，扮演不同的角色。你的职责是利用工具帮用户完成任务，也可以和用户闲聊，陪伴用户"
 LTM_SUMMARIZE_INTERVAL = 10
 
 # 工作目录（可运行时修改）
@@ -43,3 +43,33 @@ def get_work_dir() -> Path:
 def set_work_dir(path: str | Path):
     global _work_dir
     _work_dir = Path(path).resolve()
+
+
+# 灵魂（soul）路径
+_PROJECT_ROOT = Path(__file__).resolve().parent
+SOUL_PATH = _PROJECT_ROOT / "soul.md"
+
+
+def get_soul() -> str:
+    """读取 soul.md，返回内容或空字符串。"""
+    if SOUL_PATH.exists():
+        return SOUL_PATH.read_text(encoding="utf-8").strip()
+    return ""
+
+
+def set_soul(text: str):
+    """写入 soul.md。"""
+    SOUL_PATH.write_text(text.strip(), encoding="utf-8")
+
+
+# 头像路径
+_avatar_path: str | None = None
+
+
+def get_avatar_path() -> str | None:
+    return _avatar_path
+
+
+def set_avatar_path(path: str | None):
+    global _avatar_path
+    _avatar_path = path

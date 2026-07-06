@@ -42,8 +42,9 @@ def _create_icon_image(size: int = 64):
 class TrayApp:
     """系统托盘图标（负责生命周期，不负责 UI 逻辑）。"""
 
-    def __init__(self, on_open: callable, on_exit: callable, on_select_workdir: callable | None = None):
+    def __init__(self, on_open: callable, on_settings: callable, on_exit: callable, on_select_workdir: callable | None = None):
         self._on_open = on_open
+        self._on_settings = on_settings
         self._on_exit = on_exit
         self._on_select_workdir = on_select_workdir or self._choose_workdir
         self._icon: pystray.Icon | None = None
@@ -64,6 +65,7 @@ class TrayApp:
         menu = pystray.Menu(
             pystray.MenuItem("打开控制台", self._on_open),
             pystray.Menu.SEPARATOR,
+            pystray.MenuItem("设置", self._on_settings),
             pystray.MenuItem("选择工作目录", self._on_select_workdir),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("退出", self._on_exit),
