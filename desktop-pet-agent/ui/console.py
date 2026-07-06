@@ -121,7 +121,6 @@ class ConsoleWindow:
 
         self._chat_display.configure(state="normal")
         self._chat_display.insert("end", "\nCodePet：")
-        self._stream_mark = self._chat_display.index("end-1c")
         self._chat_display.configure(state="disabled")
 
         def worker():
@@ -135,7 +134,7 @@ class ConsoleWindow:
 
     def _append_stream(self, token: str):
         self._chat_display.configure(state="normal")
-        self._chat_display.insert(self._stream_mark, token)
+        self._chat_display.insert("end", token)
         self._chat_display.see("end")
         self._chat_display.configure(state="disabled")
 
