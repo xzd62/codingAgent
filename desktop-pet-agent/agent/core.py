@@ -12,10 +12,12 @@ from tool.registry import registry
 class Agent:
     """Agent 调度层。 """
 
-    def __init__(self, llm: LLMClient, stm: SessionContext, ltm: MemoryStore):
+    def __init__(self, llm: LLMClient, stm: SessionContext, ltm: MemoryStore,
+                 on_status: callable | None = None):
         self._llm = llm
         self._stm = stm
         self._ltm = ltm
+        self._on_status = on_status or (lambda msg: None)
         self._setup_system_prompt()
 
     def _setup_system_prompt(self):
@@ -35,12 +37,11 @@ class Agent:
         self._stm.add_system(full_prompt)
 
     def process(self, user_input: str) -> str:
-        """接收用户输入，返回助手回复。
-        """
         self._stm.add_message(role="user",content=user_input)
         tools = registry.get_schemas()
         
         while True:
+            self._on_status("思考中…")
             history = self._stm.get_messages()
             reply = self._llm.chat(history, tools)
 
@@ -50,12 +51,40 @@ class Agent:
                 for tc in reply["tool_calls"]:
                     name = tc["function"]["name"]
                     args = json.loads(tc["function"]["arguments"])
+                    self._on_status(f"调用工具 {name}…")
                     obs = registry.dispatch(name, args)
+                    got = str(obs.get("content", ""))[:80] if obs.get("success") else str(obs)
+                    self._on_status(f"工具返回: {got}")
                     self._stm.add_message("tool", json.dumps(obs, ensure_ascii=False),
                                           tool_call_id=tc["id"])
                 continue 
 
             text = reply["content"] or ""
+
+            # 兼容处理：LLM 用 <tool_name>...</tool_name> 文字模拟调工具时，手动解析执行
+            import re
+            parsed = False
+            for tname in ("read_file", "write_file", "glob"):
+                pattern = rf"<{tname}>(.*?)</{tname}>"
+                match = re.search(pattern, text, re.DOTALL)
+                if match:
+                    args_raw = match.group(1).strip()
+                    try:
+                        args = json.loads(args_raw) if args_raw.startswith("{") else {"path": args_raw}
+                    except json.JSONDecodeError:
+                        args = {"path": args_raw}
+                    self._on_status(f"调用工具 {tname}…")
+                    obs = registry.dispatch(tname, args)
+                    got = str(obs.get("content", ""))[:80] if obs.get("success") else str(obs)
+                    self._on_status(f"工具返回: {got}")
+                    self._stm.add_message("assistant", text)
+                    self._stm.add_message("tool", json.dumps(obs, ensure_ascii=False),
+                                          tool_call_id=tname)
+                    parsed = True
+                    break
+            if parsed:
+                continue
+
             self._stm.add_message("assistant", text)
             self._ltm.try_summarize(
                 self._llm,
@@ -65,7 +94,7 @@ class Agent:
             return text
 
     def process_stream(self, user_input: str):
-        """流式版 process，逐个 yield token。流结束自动保存到 stm/ltm。"""
+        self._on_status("思考中…")
         self._stm.add_message("user", user_input)
         history = self._stm.get_messages()
 

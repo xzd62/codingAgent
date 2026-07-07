@@ -1,5 +1,5 @@
 """
-工具注册中心 — 复现 Hermes ToolRegistry。
+工具注册中心 
 工具在模块顶层调用 registry.register() 注册。
 """
 

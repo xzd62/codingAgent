@@ -9,6 +9,8 @@ from config.settings import (
     LLM_TIMEOUT,
 )
 
+from tool.registry import registry
+
 
 class LLMClient:
     """LLM 通信客户端，只负责收发消息，不存历史、不决策。"""

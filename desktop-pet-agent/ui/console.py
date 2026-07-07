@@ -14,6 +14,7 @@ class ConsoleWindow:
 
     def __init__(self, agent: Agent):
         self._agent = agent
+        self._agent._on_status = self._append_status
 
         self._root = tk.Tk()
         self._root.title("CodePet")
@@ -119,28 +120,32 @@ class ConsoleWindow:
 
         self._append_message("你", user_text, "#666")
 
-        self._chat_display.configure(state="normal")
-        self._chat_display.insert("end", "\nCodePet：")
-        self._chat_display.configure(state="disabled")
-
         def worker():
             try:
-                for token in self._agent.process_stream(user_text):
-                    self._root.after(0, self._append_stream, token)
+                reply = self._agent.process(user_text)
+                self._root.after(0, self._show_reply, reply)
             except Exception as e:
                 self._root.after(0, self._show_stream_error, str(e))
 
         threading.Thread(target=worker, daemon=True).start()
 
-    def _append_stream(self, token: str):
+    def _show_reply(self, text: str):
         self._chat_display.configure(state="normal")
-        self._chat_display.insert("end", token)
+        self._chat_display.insert("end", f"\nCodePet：{text}\n")
         self._chat_display.see("end")
         self._chat_display.configure(state="disabled")
 
     def _show_stream_error(self, msg: str):
         self._chat_display.configure(state="normal")
         self._chat_display.insert("end", f"\n（出错了：{msg}）\n")
+        self._chat_display.see("end")
+        self._chat_display.configure(state="disabled")
+
+    def _append_status(self, msg: str):
+        self._chat_display.configure(state="normal")
+        self._chat_display.insert("end", f"\n  · {msg}")
+        self._chat_display.tag_configure("status", foreground="#999", font=("Microsoft YaHei", 9, "italic"))
+        self._chat_display.tag_add("status", "end-2l", "end-1l")
         self._chat_display.see("end")
         self._chat_display.configure(state="disabled")
 

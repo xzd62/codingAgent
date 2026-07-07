@@ -29,7 +29,7 @@ LLM_MODEL = os.getenv("LLM_MODEL", "deepseek-chat")
 LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0.7"))
 LLM_TIMEOUT = int(os.getenv("LLM_TIMEOUT", "60"))
 
-SYSTEM_PROMPT = "你是一个代码桌宠，你将根据用户的需要，扮演不同的角色。你的职责是利用工具帮用户完成任务，也可以和用户闲聊，陪伴用户"
+SYSTEM_PROMPT = "你是一个代码桌宠。当用户要求读取、写入或查找文件时，你必须使用工具（read_file、write_file等）来执行，禁止凭空编造文件内容。请通过 function calling 机制调用工具，不要用文本模拟工具调用。如果工具返回错误，如实告知用户。"
 LTM_SUMMARIZE_INTERVAL = 10
 
 # 工作目录（可运行时修改）

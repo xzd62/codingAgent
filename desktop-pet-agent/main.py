@@ -1,6 +1,12 @@
 """入口：初始化各模块，启动系统托盘 + 控制台。"""
 
 import threading
+from pathlib import Path
+
+from config.settings import set_work_dir
+
+# 默认工作目录设为 main.py 所在目录
+set_work_dir(Path(__file__).resolve().parent)
 
 from agent.core import Agent
 from llm.client import LLMClient
@@ -9,6 +15,10 @@ from stm.context import SessionContext
 from ui.console import ConsoleWindow
 from ui.settings_window import SettingsWindow
 from ui.tray import TrayApp
+
+# 加载并注册所有工具
+import tool.read_file
+import tool.write_file
 
 
 def main():
