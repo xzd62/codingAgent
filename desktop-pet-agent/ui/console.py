@@ -49,7 +49,9 @@ class ConsoleWindow:
         self._session_combo.grid(row=0, column=0, sticky="ew", padx=(0, 6))
         self._session_combo.bind("<<ComboboxSelected>>", self._on_session_switch)
 
-        ttk.Button(toolbar, text="新对话", command=self._on_new_session, width=8).grid(row=0, column=1)
+        ttk.Button(toolbar, text="新对话", command=self._on_new_session, width=8).grid(row=0, column=1, padx=(0, 6))
+        ttk.Button(toolbar, text="重命名", command=self._on_rename_session, width=7).grid(row=0, column=2, padx=(0, 6))
+        ttk.Button(toolbar, text="删除", command=self._on_delete_session, width=6).grid(row=0, column=3)
 
         # --- 宠物头像区域 ---
         pet_frame = ttk.Frame(self._root, padding=6)
@@ -206,6 +208,39 @@ class ConsoleWindow:
         self._session_mgr.new_session(self._agent._stm)
         self._agent._setup_system_prompt()
         self._render_history()
+        self._refresh_session_list()
+
+    def _on_rename_session(self):
+        convs = self._session_mgr.list_conversations()
+        idx = self._session_combo.current()
+        if idx < 0 or idx >= len(convs):
+            return
+        conv = convs[idx]
+        from tkinter import simpledialog
+        name = simpledialog.askstring("重命名", "输入新名称:", initialvalue=conv["name"], parent=self._root)
+        if name:
+            self._session_mgr.rename_conversation(conv["id"], name)
+            self._refresh_session_list()
+
+    def _on_delete_session(self):
+        convs = self._session_mgr.list_conversations()
+        idx = self._session_combo.current()
+        if idx < 0 or idx >= len(convs):
+            return
+        conv = convs[idx]
+        from tkinter import messagebox
+        if not messagebox.askyesno("确认删除", f"确定删除「{conv['name']}」吗？", parent=self._root):
+            return
+        self._session_mgr.delete_conversation(conv["id"])
+        # 如果删除的是当前会话，切换到列表第一个或新建
+        if self._session_mgr.get_current_id() == conv["id"]:
+            remaining = self._session_mgr.list_conversations()
+            if remaining:
+                self._session_mgr.switch_to(remaining[0]["id"], self._agent._stm)
+            else:
+                self._session_mgr.new_session(self._agent._stm)
+            self._agent._setup_system_prompt()
+            self._render_history()
         self._refresh_session_list()
 
     def _render_history(self):
