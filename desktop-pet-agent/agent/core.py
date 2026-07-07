@@ -65,7 +65,7 @@ class Agent:
             # 兼容处理：LLM 用 <tool_name>...</tool_name> 文字模拟调工具时，手动解析执行
             import re
             parsed = False
-            for tname in ("read_file", "write_file", "glob"):
+            for tname in ("read_file", "write_file", "glob", "grep", "edit_file"):
                 pattern = rf"<{tname}>(.*?)</{tname}>"
                 match = re.search(pattern, text, re.DOTALL)
                 if match:

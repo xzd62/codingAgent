@@ -20,6 +20,8 @@ from ui.tray import TrayApp
 import tool.read_file
 import tool.write_file
 import tool.glob
+import tool.grep
+import tool.edit_file
 
 
 def main():
