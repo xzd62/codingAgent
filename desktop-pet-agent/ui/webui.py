@@ -1,14 +1,16 @@
+import threading
 import json
 from pathlib import Path
 
 import webview
 
 from agent.core import Agent
-from config.settings import set_work_dir
+from config.settings import get_soul, set_soul, get_avatar_path, set_avatar_path, set_work_dir
 from llm.client import LLMClient
 from ltm.store import MemoryStore
 from stm.context import SessionContext
 from stm.manager import SessionManager
+from ui.tray import TrayApp
 import tool.read_file
 import tool.write_file
 import tool.glob
@@ -69,15 +71,50 @@ class Api:
         except Exception as e:
             return f"（出错了：{e}）"
 
-    def open_settings(self):
+    # ---- 设置 ----
+
+    def get_soul(self) -> str:
+        return get_soul()
+
+    def save_soul(self, text: str):
+        set_soul(text)
+
+    def get_avatar(self) -> str:
+        return get_avatar_path() or ""
+
+    def pick_avatar(self) -> str:
         for win in webview.windows:
-            win.evaluate_js("appendMsg('status', '设置面板开发中…')")
-            break
+            file_types = ("图片文件", "*.png;*.jpg;*.jpeg;*.gif;*.bmp")
+            result = win.create_file_dialog(webview.OPEN_DIALOG, allow_multiple=False, file_types=[file_types])
+            if result:
+                path = result[0]
+                set_avatar_path(path)
+                return path
+        return ""
+
+    def clear_avatar(self):
+        set_avatar_path(None)
+
+
+def _start_tray():
+    tray = TrayApp(
+        on_open=lambda: None,
+        on_settings=lambda: None,
+        on_exit=lambda: _quit(),
+    )
+    tray.run()
+
+
+def _quit():
+    import os
+    os._exit(0)
 
 
 def run():
     srcdir = Path(__file__).resolve().parent.parent / "web"
     set_work_dir(srcdir.parent)
+
+    threading.Thread(target=_start_tray, daemon=True).start()
 
     webview.create_window(
         "CodePet",
@@ -87,7 +124,7 @@ def run():
         resizable=True,
         js_api=Api(),
     )
-    webview.start(debug=True)
+    webview.start(debug=False)
 
 
 if __name__ == "__main__":
