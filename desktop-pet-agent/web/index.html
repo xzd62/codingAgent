@@ -121,10 +121,31 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
       </div>
       <div class="settings-content" id="stAvatar">
         <div class="avatar-row">
-          <div class="avatar-preview" id="avatarPreview">未选择</div>
+          <div class="avatar-preview" id="avatarPreview">
+            <svg width="80" height="80" viewBox="0 0 80 80">
+              <circle cx="40" cy="38" r="24" fill="#FFB347"/>
+              <polygon points="20,30 14,12 30,22" fill="#FF9F43"/>
+              <polygon points="60,30 66,12 50,22" fill="#FF9F43"/>
+              <polygon points="23,28 17,16 31,24" fill="#FFB8B8"/>
+              <polygon points="57,28 63,16 49,24" fill="#FFB8B8"/>
+              <ellipse cx="32" cy="34" rx="4" ry="5" fill="#333"/>
+              <ellipse cx="48" cy="34" rx="4" ry="5" fill="#333"/>
+              <circle cx="32" cy="33" r="1.5" fill="white"/>
+              <circle cx="48" cy="33" r="1.5" fill="white"/>
+              <polygon points="38,42 42,42 40,46" fill="#FF6B6B"/>
+              <path d="M34,46 Q38,50 40,46 Q42,50 46,46" fill="none" stroke="#555" stroke-width="1.5"/>
+              <line x1="18" y1="42" x2="30" y2="40" stroke="#888" stroke-width="1"/>
+              <line x1="18" y1="46" x2="30" y2="46" stroke="#888" stroke-width="1"/>
+              <line x1="18" y1="50" x2="30" y2="52" stroke="#888" stroke-width="1"/>
+              <line x1="62" y1="42" x2="50" y2="40" stroke="#888" stroke-width="1"/>
+              <line x1="62" y1="46" x2="50" y2="46" stroke="#888" stroke-width="1"/>
+              <line x1="62" y1="50" x2="50" y2="52" stroke="#888" stroke-width="1"/>
+            </svg>
+          </div>
           <div>
-            <button class="btn btn-secondary" onclick="pickAvatar()">选择图片</button>
-            <button class="btn btn-secondary" onclick="clearAvatar()" style="margin-left:8px">清除</button>
+            <input type="file" id="avatarFileInput" accept="image/png,image/jpeg,image/gif,image/bmp" hidden onchange="onAvatarFile(event)">
+            <button class="btn btn-secondary" onclick="document.getElementById('avatarFileInput').click()">选择图片</button>
+            <button class="btn btn-secondary" onclick="clearAvatar()" style="margin-left:8px">恢复默认</button>
             <p style="font-size:12px;color:#a08c78;margin-top:8px">支持 .png / .jpg</p>
           </div>
         </div>
@@ -208,7 +229,6 @@ async function send() {
   const text = inp.value.trim(); if (!text) return;
   inp.value = ''; setBusy(true);
   appendMsg('user', text);
-  appendStatus('思考中…');
   pywebview.api.start_stream(text);
   statusTimer = setInterval(() => {
     if (!processing) { clearInterval(statusTimer); return; }
@@ -285,18 +305,36 @@ async function saveModel() {
   if (apikey && !apikey.includes('••••')) await pywebview.api.save_apikey(apikey);
   alert('模型设定已保存。');
 }
-async function pickAvatar() {
-  const path = await pywebview.api.pick_avatar();
-  if (path) updateAvatarPreview(path);
+async function onAvatarFile(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  const url = URL.createObjectURL(file);
+  updateAvatarPreview(url);
+  const path = file.path || '';
+  if (path) await pywebview.api.pick_avatar(path);
+  event.target.value = '';
 }
 async function clearAvatar() {
   await pywebview.api.clear_avatar();
   updateAvatarPreview('');
 }
-function updateAvatarPreview(path) {
+function updateAvatarPreview(src) {
   const el = document.getElementById('avatarPreview');
-  if (path) { el.innerHTML = '<img src="file:///'+path.replace(/\\/g,'/')+'" onerror="this.parentElement.innerHTML=\'无法加载\'">'; }
-  else { el.innerHTML = '未选择'; }
+  if (src) {
+    el.innerHTML = '<img src="'+esc(src)+'" style="width:100%;height:100%;object-fit:cover">';
+  } else { showDefaultAvatar(); }
+}
+function showDefaultAvatar() {
+  document.getElementById('avatarPreview').innerHTML =
+    `<svg width="80" height="80" viewBox="0 0 80 80">
+      <circle cx="40" cy="38" r="24" fill="#FFB347"/>
+      <polygon points="20,30 14,12 30,22" fill="#FF9F43"/>
+      <polygon points="60,30 66,12 50,22" fill="#FF9F43"/>
+      <ellipse cx="32" cy="34" rx="4" ry="5" fill="#333"/>
+      <ellipse cx="48" cy="34" rx="4" ry="5" fill="#333"/>
+      <polygon points="38,42 42,42 40,46" fill="#FF6B6B"/>
+      <path d="M34,46 Q38,50 40,46 Q42,50 46,46" fill="none" stroke="#555" stroke-width="1.5"/>
+    </svg>`;
 }
 
 window.addEventListener('pywebviewready', async () => {

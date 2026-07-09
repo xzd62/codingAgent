@@ -130,15 +130,8 @@ class Api:
     def get_avatar(self) -> str:
         return get_avatar_path() or ""
 
-    def pick_avatar(self) -> str:
-        for win in webview.windows:
-            file_types = ("图片文件", "*.png;*.jpg;*.jpeg;*.gif;*.bmp")
-            result = win.create_file_dialog(webview.OPEN_DIALOG, allow_multiple=False, file_types=[file_types])
-            if result:
-                path = result[0]
-                set_avatar_path(path)
-                return path
-        return ""
+    def pick_avatar(self, path: str):
+        set_avatar_path(path)
 
     def clear_avatar(self):
         set_avatar_path(None)
