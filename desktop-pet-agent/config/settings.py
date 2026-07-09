@@ -2,11 +2,13 @@ import os
 from pathlib import Path
 
 
+_ENV_PATH = Path(__file__).resolve().parent.parent / "settings.env"
+
 def _load_env():
-    """先后尝试加载项目内 .env 和（可选）工作区根目录 .env。"""
+    """加载 .env → settings.env，后者优先级更高。"""
     candidates = [
-        Path(__file__).resolve().parent.parent / ".env",    # desktop-pet-agent/.env
-        Path(__file__).resolve().parent.parent.parent / ".env",  # 项目根目录 .env
+        Path(__file__).resolve().parent.parent / ".env",
+        Path(__file__).resolve().parent.parent.parent / ".env",
     ]
     for env_path in candidates:
         if not os.path.isfile(env_path):
@@ -17,8 +19,17 @@ def _load_env():
                 if not line or line.startswith("#") or "=" not in line:
                     continue
                 key, _, val = line.partition("=")
-                key, val = key.strip(), val.strip().strip("\"'")
-                os.environ.setdefault(key, val)
+                os.environ.setdefault(key.strip(), val.strip().strip("\"'"))
+
+    # settings.env 覆盖上面的值（持久化运行时配置）
+    if _ENV_PATH.exists():
+        with open(_ENV_PATH, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, _, val = line.partition("=")
+                os.environ[key.strip()] = val.strip().strip("\"'")
 
 
 _load_env()
@@ -81,8 +92,8 @@ _llm_api_key: str = LLM_API_KEY
 
 
 MODEL_OPTIONS = {
-    "deepseek-chat": "DeepSeek V4 Flash",
-    "deepseek-reasoner": "DeepSeek V4 Pro",
+    "deepseek-v4-flash": "deepseek-v4-flash",
+    "deepseek-v4-pro": "deepseek-v4-pro",
 }
 
 
@@ -93,6 +104,7 @@ def get_llm_model() -> str:
 def set_llm_model(name: str):
     global _llm_model
     _llm_model = name
+    _update_env("LLM_MODEL", name)
 
 
 def get_llm_api_key() -> str:
@@ -102,3 +114,25 @@ def get_llm_api_key() -> str:
 def set_llm_api_key(key: str):
     global _llm_api_key
     _llm_api_key = key
+    _update_env("LLM_API_KEY", key)
+
+
+_ENV_PATH = Path(__file__).resolve().parent.parent / "settings.env"
+
+
+def _update_env(key: str, value: str):
+    """更新或添加环境变量到 settings.env。"""
+    path = _ENV_PATH
+    lines = []
+    found = False
+    if path.exists():
+        lines = path.read_text(encoding="utf-8").splitlines()
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith(key + "="):
+            lines[i] = f"{key}={value}"
+            found = True
+            break
+    if not found:
+        lines.append(f"{key}={value}")
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")

@@ -10,7 +10,6 @@ from config.settings import (
     get_avatar_path, set_avatar_path,
     get_llm_model, set_llm_model,
     get_llm_api_key, set_llm_api_key,
-    MODEL_OPTIONS,
     set_work_dir,
 )
 from llm.client import LLMClient
@@ -103,9 +102,6 @@ class Api:
         set_avatar_path(None)
 
     # ---- 模型 ----
-
-    def get_model_options(self) -> str:
-        return json.dumps(MODEL_OPTIONS, ensure_ascii=False)
 
     def get_model(self) -> str:
         return get_llm_model()

@@ -195,7 +195,10 @@ body {
         <p style="font-size:12px;color:#a08c78;margin-bottom:12px">选择 AI 模型和配置 API 密钥。</p>
         <div style="margin-bottom:16px">
           <label style="font-size:13px;font-weight:bold;display:block;margin-bottom:6px">模型</label>
-          <select id="modelSelect" style="width:100%;padding:10px;border:1px solid #e8d8c4;border-radius:8px;font-size:13px;font-family:inherit;outline:none;background:white"></select>
+          <select id="modelSelect" style="width:100%;padding:10px;border:1px solid #e8d8c4;border-radius:8px;font-size:13px;font-family:inherit;outline:none;background:white">
+            <option value="deepseek-v4-flash">deepseek-v4-flash</option>
+            <option value="deepseek-v4-pro">deepseek-v4-pro</option>
+          </select>
         </div>
         <div style="margin-bottom:16px">
           <label style="font-size:13px;font-weight:bold;display:block;margin-bottom:6px">API Key</label>
@@ -302,18 +305,25 @@ async function switchConv(id) {
   document.getElementById('messages').innerHTML = '';
   const msgs = await pywebview.api.get_history();
   JSON.parse(msgs).forEach(m=>{ if(m.role!=='system') appendMsg(m.role,m.content||'(工具调用)'); });
+  // 切换回对话页
+  const chatBtn = document.querySelectorAll('.nav-item')[0];
+  switchPage('chat', chatBtn);
 }
 async function newSession() {
   await pywebview.api.new_conv();
   document.getElementById('messages').innerHTML = '';
   document.getElementById('convTitle').textContent = '新对话';
   loadConvs();
+  const chatBtn = document.querySelectorAll('.nav-item')[0];
+  switchPage('chat', chatBtn);
 }
 async function deleteConv(id) {
   if (!confirm('确定删除该对话？')) return;
   await pywebview.api.delete_conv(id);
   document.getElementById('messages').innerHTML = '';
   loadConvs();
+  const chatBtn = document.querySelectorAll('.nav-item')[0];
+  switchPage('chat', chatBtn);
 }
 
 // ---- 设置 ----
@@ -323,14 +333,10 @@ async function loadSettings() {
   const av = await pywebview.api.get_avatar();
   updateAvatarPreview(av);
   // 加载模型
-  const opts = JSON.parse(await pywebview.api.get_model_options());
   const cur = await pywebview.api.get_model();
-  const sel = document.getElementById('modelSelect'); sel.innerHTML = '';
-  for (const [k,v] of Object.entries(opts)) {
-    const o = document.createElement('option'); o.value = k; o.textContent = v;
-    if (k === cur) o.selected = true;
-    sel.appendChild(o);
-  }
+  document.getElementById('modelSelect').value = cur;
+  const apikey = await pywebview.api.get_apikey();
+  document.getElementById('apiKeyInput').value = apikey;
 }
 function switchSettingTab(btn, id) {
   document.querySelectorAll('.settings-tab').forEach(e=>e.classList.remove('active'));
@@ -341,14 +347,14 @@ function switchSettingTab(btn, id) {
 async function saveSoul() {
   const text = document.getElementById('soulInput').value.trim();
   await pywebview.api.save_soul(text);
-  switchPage('chat', document.querySelector('.nav-item'));
+  alert('灵魂设定已保存，重启对话后生效。');
 }
 async function saveModel() {
   const model = document.getElementById('modelSelect').value;
   const apikey = document.getElementById('apiKeyInput').value.trim();
-  await pywebview.api.set_model(model);
-  if (apikey) await pywebview.api.save_apikey(apikey);
-  switchPage('chat', document.querySelector('.nav-item'));
+  if (model) await pywebview.api.set_model(model);
+  if (apikey && !apikey.includes('••••')) await pywebview.api.save_apikey(apikey);
+  alert('模型设定已保存。');
 }
 async function pickAvatar() {
   const path = await pywebview.api.pick_avatar();
