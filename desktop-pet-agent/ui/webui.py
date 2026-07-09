@@ -1,5 +1,6 @@
-import threading
+import base64
 import json
+import threading
 from pathlib import Path
 
 import webview
@@ -132,6 +133,30 @@ class Api:
 
     def pick_avatar(self, path: str):
         set_avatar_path(path)
+
+    def save_avatar_data(self, data_url: str):
+        """保存 base64 图片数据到本地文件，返回保存后的路径。"""
+        import re
+        match = re.match(r"data:image/(\w+);base64,(.+)", data_url)
+        if not match:
+            return ""
+        ext = match.group(1)
+        raw = base64.b64decode(match.group(2))
+        save_dir = Path(__file__).resolve().parent.parent / "data"
+        save_dir.mkdir(parents=True, exist_ok=True)
+        save_path = save_dir / f"avatar.{ext}"
+        save_path.write_bytes(raw)
+        set_avatar_path(str(save_path))
+        return str(save_path)
+
+    def get_avatar_data(self) -> str:
+        """返回头像图片的 base64 data URL。"""
+        path = get_avatar_path()
+        if not path or not Path(path).exists():
+            return ""
+        raw = Path(path).read_bytes()
+        ext = Path(path).suffix.lstrip(".") or "png"
+        return f"data:image/{ext};base64,{base64.b64encode(raw).decode()}"
 
     def clear_avatar(self):
         set_avatar_path(None)

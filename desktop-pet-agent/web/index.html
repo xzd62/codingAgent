@@ -20,6 +20,25 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
 .nav-conv-item:hover .del{display:block}
 .nav-conv-item .del:hover{background:#5a3a2a;border-radius:3px}
 .sidebar-footer{padding:14px 16px;border-top:1px solid #3d2e1e;font-size:11px;color:#7a6050}
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+
+/* 宠物面板 */
+.pet-panel{
+  width:180px;background:#f5ede0;border-left:1px solid #e8d8c4;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:16px;flex-shrink:0;position:relative;min-width:80px;max-width:400px;
+  transition:width 0.2s;
+}
+.pet-canvas{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;width:100%}
+.pet-canvas svg{width:100%;height:auto;max-height:100%}
+.pet-controls{display:flex;gap:8px;align-items:center;padding-top:12px;flex-shrink:0}
+.pet-controls button{
+  width:28px;height:28px;border:1px solid #e8d8c4;border-radius:6px;
+  background:white;cursor:pointer;font-size:16px;display:flex;
+  align-items:center;justify-content:center;color:#2c1f14
+}
+.pet-controls button:hover{background:#ede0d0}
+.pet-controls .size-label{font-size:11px;color:#a08c78;min-width:32px;text-align:center}
 .main{flex:1;display:flex;flex-direction:column}
 .header{padding:18px 32px;border-bottom:1px solid #e8d8c4;display:flex;justify-content:space-between;align-items:center}
 .header h2{font-size:19px}
@@ -120,40 +139,71 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
         <div style="text-align:right"><button class="btn btn-primary" onclick="saveModel()">保存模型设定</button></div>
       </div>
       <div class="settings-content" id="stAvatar">
-        <div class="avatar-row">
-          <div class="avatar-preview" id="avatarPreview">
-            <svg width="80" height="80" viewBox="0 0 80 80">
-              <circle cx="40" cy="38" r="24" fill="#FFB347"/>
-              <polygon points="20,30 14,12 30,22" fill="#FF9F43"/>
-              <polygon points="60,30 66,12 50,22" fill="#FF9F43"/>
-              <polygon points="23,28 17,16 31,24" fill="#FFB8B8"/>
-              <polygon points="57,28 63,16 49,24" fill="#FFB8B8"/>
-              <ellipse cx="32" cy="34" rx="4" ry="5" fill="#333"/>
-              <ellipse cx="48" cy="34" rx="4" ry="5" fill="#333"/>
-              <circle cx="32" cy="33" r="1.5" fill="white"/>
-              <circle cx="48" cy="33" r="1.5" fill="white"/>
-              <polygon points="38,42 42,42 40,46" fill="#FF6B6B"/>
-              <path d="M34,46 Q38,50 40,46 Q42,50 46,46" fill="none" stroke="#555" stroke-width="1.5"/>
-              <line x1="18" y1="42" x2="30" y2="40" stroke="#888" stroke-width="1"/>
-              <line x1="18" y1="46" x2="30" y2="46" stroke="#888" stroke-width="1"/>
-              <line x1="18" y1="50" x2="30" y2="52" stroke="#888" stroke-width="1"/>
-              <line x1="62" y1="42" x2="50" y2="40" stroke="#888" stroke-width="1"/>
-              <line x1="62" y1="46" x2="50" y2="46" stroke="#888" stroke-width="1"/>
-              <line x1="62" y1="50" x2="50" y2="52" stroke="#888" stroke-width="1"/>
-            </svg>
-          </div>
-          <div>
-            <input type="file" id="avatarFileInput" accept="image/png,image/jpeg,image/gif,image/bmp" hidden onchange="onAvatarFile(event)">
+        <div style="margin-bottom:12px">
+          <input type="file" id="avatarFileInput" accept="image/png,image/jpeg,image/gif,image/bmp" hidden onchange="onAvatarFile(event)">
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+            <input type="text" id="avatarPathDisplay" readonly style="flex:1;padding:8px;border:1px solid #e8d8c4;border-radius:6px;font-size:12px;background:#f5ede0;color:#7a6050">
             <button class="btn btn-secondary" onclick="document.getElementById('avatarFileInput').click()">选择图片</button>
-            <button class="btn btn-secondary" onclick="clearAvatar()" style="margin-left:8px">恢复默认</button>
-            <p style="font-size:12px;color:#a08c78;margin-top:8px">支持 .png / .jpg</p>
+            <button class="btn btn-secondary" onclick="clearAvatar()">恢复默认</button>
           </div>
+        </div>
+        <div style="background:#ede0d0;border-radius:10px;display:flex;align-items:center;justify-content:center;min-height:300px;overflow:hidden" id="avatarLargePreview">
+          <svg width="120" height="120" viewBox="0 0 120 120">
+            <circle cx="60" cy="55" r="36" fill="#FFB347"/>
+            <polygon points="32,40 22,15 42,30" fill="#FF9F43"/>
+            <polygon points="88,40 98,15 78,30" fill="#FF9F43"/>
+            <polygon points="35,36 25,20 43,33" fill="#FFB8B8"/>
+            <polygon points="85,36 95,20 77,33" fill="#FFB8B8"/>
+            <ellipse cx="48" cy="50" rx="6" ry="7" fill="#333"/>
+            <ellipse cx="72" cy="50" rx="6" ry="7" fill="#333"/>
+            <circle cx="48" cy="48" r="2.5" fill="white"/>
+            <circle cx="72" cy="48" r="2.5" fill="white"/>
+            <polygon points="57,65 63,65 60,70" fill="#FF6B6B"/>
+            <path d="M52,71 Q58,76 60,71 Q62,76 68,71" fill="none" stroke="#555" stroke-width="2"/>
+          </svg>
         </div>
       </div>
       <div class="settings-content" id="stTts">
         <p style="font-size:12px;color:#a08c78">语音合成功能开发中…</p>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- 宠物面板 -->
+<div class="pet-panel" id="petPanel">
+  <div class="pet-canvas" id="petCanvas">
+    <img id="petAvatarImg" style="display:none;width:100%;height:100%;object-fit:contain">
+    <svg id="petAvatarSvg" viewBox="0 0 120 120" width="100%" height="100%">
+      <!-- 脸 -->
+      <circle cx="60" cy="55" r="36" fill="#FFB347"/>
+      <!-- 耳朵 -->
+      <polygon points="32,40 22,15 42,30" fill="#FF9F43"/>
+      <polygon points="88,40 98,15 78,30" fill="#FF9F43"/>
+      <polygon points="35,36 25,20 43,33" fill="#FFB8B8"/>
+      <polygon points="85,36 95,20 77,33" fill="#FFB8B8"/>
+      <!-- 眼睛 -->
+      <ellipse cx="48" cy="50" rx="6" ry="7" fill="#333"/>
+      <ellipse cx="72" cy="50" rx="6" ry="7" fill="#333"/>
+      <circle cx="48" cy="48" r="2.5" fill="white"/>
+      <circle cx="72" cy="48" r="2.5" fill="white"/>
+      <!-- 鼻子 -->
+      <polygon points="57,65 63,65 60,70" fill="#FF6B6B"/>
+      <!-- 嘴 -->
+      <path d="M52,71 Q58,76 60,71 Q62,76 68,71" fill="none" stroke="#555" stroke-width="2"/>
+      <!-- 胡须 -->
+      <line x1="22" y1="58" x2="40" y2="56" stroke="#aaa" stroke-width="1.5"/>
+      <line x1="22" y1="64" x2="40" y2="64" stroke="#aaa" stroke-width="1.5"/>
+      <line x1="22" y1="70" x2="40" y2="72" stroke="#aaa" stroke-width="1.5"/>
+      <line x1="98" y1="58" x2="80" y2="56" stroke="#aaa" stroke-width="1.5"/>
+      <line x1="98" y1="64" x2="80" y2="64" stroke="#aaa" stroke-width="1.5"/>
+      <line x1="98" y1="70" x2="80" y2="72" stroke="#aaa" stroke-width="1.5"/>
+    </svg>
+  </div>
+  <div class="pet-controls">
+    <button onclick="resizePet(-20)">−</button>
+    <span class="size-label" id="petSizeLabel">180</span>
+    <button onclick="resizePet(20)">+</button>
   </div>
 </div>
 
@@ -184,6 +234,27 @@ function setBusy(b) {
   if (!b) document.getElementById('input').focus();
 }
 function onInputKey(e) { if (e.key==='Enter'&&!e.shiftKey) { e.preventDefault(); send(); } }
+
+function updatePetAvatar(src) {
+  const img = document.getElementById('petAvatarImg');
+  const svg = document.getElementById('petAvatarSvg');
+  if (src) {
+    img.src = src;
+    img.style.display = 'block';
+    svg.style.display = 'none';
+  } else {
+    img.style.display = 'none';
+    svg.style.display = 'block';
+  }
+}
+
+function resizePet(delta) {
+  const panel = document.getElementById('petPanel');
+  let w = parseInt(panel.style.width) || 180;
+  w = Math.max(80, Math.min(400, w + delta));
+  panel.style.width = w + 'px';
+  document.getElementById('petSizeLabel').textContent = w;
+}
 
 function appendStatus(text) {
   const msgs = document.getElementById('messages');
@@ -283,9 +354,17 @@ async function deleteConv(id) {
 // ---- 设置 ----
 async function loadSettings() {
   document.getElementById('soulInput').value = await pywebview.api.get_soul();
-  updateAvatarPreview(await pywebview.api.get_avatar());
   document.getElementById('modelSelect').value = await pywebview.api.get_model();
   document.getElementById('apiKeyInput').value = await pywebview.api.get_apikey();
+  // 加载头像
+  const avatarData = await pywebview.api.get_avatar_data();
+  if (avatarData) {
+    updateLargePreview(avatarData);
+    document.getElementById('avatarPathDisplay').value = '已自定义头像';
+  } else {
+    updateLargePreview('');
+    document.getElementById('avatarPathDisplay').value = '';
+  }
 }
 function switchSettingTab(btn, id) {
   document.querySelectorAll('.settings-tab').forEach(e=>e.classList.remove('active'));
@@ -308,15 +387,38 @@ async function saveModel() {
 async function onAvatarFile(event) {
   const file = event.target.files && event.target.files[0];
   if (!file) return;
-  const url = URL.createObjectURL(file);
-  updateAvatarPreview(url);
-  const path = file.path || '';
-  if (path) await pywebview.api.pick_avatar(path);
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    const dataUrl = e.target.result;
+    await pywebview.api.save_avatar_data(dataUrl);
+    updateLargePreview(dataUrl);
+    document.getElementById('avatarPathDisplay').value = file.name;
+    updatePetAvatar(dataUrl);
+  };
+  reader.readAsDataURL(file);
   event.target.value = '';
 }
 async function clearAvatar() {
   await pywebview.api.clear_avatar();
-  updateAvatarPreview('');
+  updateLargePreview('');
+  document.getElementById('avatarPathDisplay').value = '';
+  updatePetAvatar('');
+}
+function updateLargePreview(src) {
+  const el = document.getElementById('avatarLargePreview');
+  if (src) {
+    el.innerHTML = '<img src="'+esc(src)+'" style="max-width:100%;max-height:100%;object-fit:contain">';
+  } else {
+    el.innerHTML = `<svg width="120" height="120" viewBox="0 0 120 120">
+      <circle cx="60" cy="55" r="36" fill="#FFB347"/>
+      <polygon points="32,40 22,15 42,30" fill="#FF9F43"/>
+      <polygon points="88,40 98,15 78,30" fill="#FF9F43"/>
+      <ellipse cx="48" cy="50" rx="6" ry="7" fill="#333"/>
+      <ellipse cx="72" cy="50" rx="6" ry="7" fill="#333"/>
+      <polygon points="57,65 63,65 60,70" fill="#FF6B6B"/>
+      <path d="M52,71 Q58,76 60,71 Q62,76 68,71" fill="none" stroke="#555" stroke-width="2"/>
+    </svg>`;
+  }
 }
 function updateAvatarPreview(src) {
   const el = document.getElementById('avatarPreview');
@@ -340,6 +442,8 @@ function showDefaultAvatar() {
 window.addEventListener('pywebviewready', async () => {
   await loadConvs();
   if (convs.length > 0) await switchConv(convs[0].id);
+  const avatarData = await pywebview.api.get_avatar_data();
+  if (avatarData) updatePetAvatar(avatarData);
 });
 </script>
 </body>

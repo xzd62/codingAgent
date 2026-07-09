@@ -78,12 +78,19 @@ _avatar_path: str | None = None
 
 
 def get_avatar_path() -> str | None:
-    return _avatar_path
+    if _avatar_path:
+        return _avatar_path
+    env_val = os.getenv("AVATAR_PATH", "")
+    return env_val if env_val else None
 
 
 def set_avatar_path(path: str | None):
     global _avatar_path
     _avatar_path = path
+    if path:
+        _update_env("AVATAR_PATH", path)
+    else:
+        _update_env("AVATAR_PATH", "")
 
 
 # 模型 & API Key（可运行时修改）
