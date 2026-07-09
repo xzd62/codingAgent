@@ -202,7 +202,7 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
   </div>
   <div class="pet-controls">
     <button onclick="resizePet(-20)">−</button>
-    <span class="size-label" id="petSizeLabel">180</span>
+    <input type="text" id="petSizeInput" value="180" style="width:40px;text-align:center;border:1px solid #e8d8c4;border-radius:4px;font-size:11px;font-family:inherit;background:white;padding:2px" onchange="setPetSize(this.value)">
     <button onclick="resizePet(20)">+</button>
   </div>
 </div>
@@ -253,7 +253,15 @@ function resizePet(delta) {
   let w = parseInt(panel.style.width) || 180;
   w = Math.max(80, Math.min(400, w + delta));
   panel.style.width = w + 'px';
-  document.getElementById('petSizeLabel').textContent = w;
+  document.getElementById('petSizeInput').value = w;
+  pywebview.api.save_pet_size(w);
+}
+function setPetSize(val) {
+  let w = parseInt(val) || 180;
+  w = Math.max(80, Math.min(400, w));
+  document.getElementById('petPanel').style.width = w + 'px';
+  document.getElementById('petSizeInput').value = w;
+  pywebview.api.save_pet_size(w);
 }
 
 function appendStatus(text) {
@@ -288,10 +296,20 @@ function animateReply(text) {
 async function pollStatus() {
   const data = await pywebview.api.get_status_updates();
   for (const item of JSON.parse(data)) {
-    if (item.startsWith('__REPLY__:')) { animateReply(item.slice(9)); return; }
-    if (item.startsWith('__ERROR__:')) { appendStatus('出错了：'+item.slice(9)); setBusy(false); return; }
     appendStatus(item);
   }
+}
+async function pollReply() {
+  const reply = await pywebview.api.check_reply();
+  if (!reply) return;
+  if (reply.startsWith('__ERROR__:')) {
+    appendStatus('出错了：'+reply.slice(9));
+    setBusy(false);
+    clearInterval(statusTimer);
+    return;
+  }
+  animateReply(reply);
+  clearInterval(statusTimer);
 }
 
 async function send() {
@@ -304,6 +322,7 @@ async function send() {
   statusTimer = setInterval(() => {
     if (!processing) { clearInterval(statusTimer); return; }
     pollStatus();
+    pollReply();
   }, 150);
 }
 
@@ -329,9 +348,10 @@ async function switchConv(id) {
   document.getElementById('messages').innerHTML = '';
   const msgs = await pywebview.api.get_history();
   for (const m of JSON.parse(msgs)) {
-    if (m.role === 'system') continue;
-    if (m.role === 'status') { appendStatus(m.content||''); }
-    else { appendMsg(m.role, m.content||'(工具调用)'); }
+    if (m.role === 'system' || m.role === 'tool') continue;
+    if (m.role === 'user') { appendMsg('user', m.content||''); }
+    else if (m.role === 'assistant' && !m.tool_calls) { appendMsg('assistant', m.content||''); }
+    else if (m.role === 'status') { appendStatus(m.content||''); }
   }
   const chatBtn = document.querySelectorAll('.nav-item')[0];
   switchPage('chat', chatBtn);
@@ -444,6 +464,10 @@ window.addEventListener('pywebviewready', async () => {
   if (convs.length > 0) await switchConv(convs[0].id);
   const avatarData = await pywebview.api.get_avatar_data();
   if (avatarData) updatePetAvatar(avatarData);
+  // 加载宠物面板大小
+  const ps = await pywebview.api.get_pet_size();
+  document.getElementById('petPanel').style.width = ps + 'px';
+  document.getElementById('petSizeInput').value = ps;
 });
 </script>
 </body>

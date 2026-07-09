@@ -44,12 +44,22 @@ class Api:
         self._status_queue.append(text)
 
     def get_status_updates(self) -> str:
-        """JS 轮询：获取新状态消息。"""
-        if not self._status_queue:
-            return "[]"
-        result = json.dumps(list(self._status_queue), ensure_ascii=False)
-        self._status_queue.clear()
-        return result
+        """JS 轮询：获取新状态消息。不含 __REPLY__。"""
+        items = list(self._status_queue)
+        self._status_queue[:] = [x for x in items if x.startswith("__")]
+        plain = [x for x in items if not x.startswith("__")]
+        return json.dumps(plain, ensure_ascii=False)
+
+    def check_reply(self) -> str:
+        """JS 调用：检查是否有最终回复。"""
+        for item in self._status_queue:
+            if item.startswith("__REPLY__:"):
+                self._status_queue.clear()
+                return item[9:]
+            if item.startswith("__ERROR__:"):
+                self._status_queue.clear()
+                return f"__ERROR__:{item[9:]}"
+        return ""
 
     # ---- 会话 ----
 
@@ -77,7 +87,15 @@ class Api:
 
     def get_history(self) -> str:
         msgs = self._stm.get_messages(include_status=True)
-        return json.dumps(msgs, ensure_ascii=False)
+        if msgs:
+            return json.dumps(msgs, ensure_ascii=False)
+        # 如果 STM 为空，从 SQLite 同步
+        conv_id = self._session_mgr.get_current_id()
+        if conv_id:
+            msgs = self._session_mgr.load_messages(conv_id)
+            self._stm.load_messages(msgs)
+            return json.dumps(msgs, ensure_ascii=False)
+        return "[]"
 
     # ---- 对话 ----
 
@@ -118,7 +136,18 @@ class Api:
     def _save_conv(self):
         conv_id = self._session_mgr.get_current_id()
         if conv_id:
-            self._session_mgr.save_messages(conv_id, self._stm.get_messages())
+            msgs = self._stm.get_messages(include_status=True)
+            self._session_mgr.save_messages(conv_id, msgs)
+
+    # ---- 宠物面板 ----
+
+    def save_pet_size(self, size: int):
+        from config.settings import _update_env
+        _update_env("PET_SIZE", str(size))
+
+    def get_pet_size(self) -> int:
+        import os
+        return int(os.getenv("PET_SIZE", "180"))
 
     # ---- 设置 ----
 

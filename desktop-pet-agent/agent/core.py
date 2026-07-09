@@ -50,8 +50,12 @@ class Agent:
             reply = self._llm.chat(history, tools)
 
             if reply.get("tool_calls"):
-                self._stm.add_message("assistant", reply.get("content") or "",
+                content = reply.get("content") or ""
+                self._stm.add_message("assistant", "",
                                       tool_calls=reply["tool_calls"])
+                if content:
+                    self._on_status(content)
+                    self._stm.add_message("status", content)
                 for tc in reply["tool_calls"]:
                     name = tc["function"]["name"]
                     args = json.loads(tc["function"]["arguments"])

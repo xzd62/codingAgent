@@ -130,7 +130,7 @@ class SessionManager:
     def switch_to(self, conv_id: int, stm: SessionContext):
         """切换到指定会话（先保存当前，再加载目标）。"""
         if self._current_id is not None:
-            self.save_messages(self._current_id, stm.get_messages())
+            self.save_messages(self._current_id, stm.get_messages(include_status=True))
         self._current_id = conv_id
         msgs = self.load_messages(conv_id)
         stm.load_messages(msgs)
@@ -138,7 +138,7 @@ class SessionManager:
     def new_session(self, stm: SessionContext) -> int:
         """保存当前对话并创建新对话。"""
         if self._current_id is not None:
-            self.save_messages(self._current_id, stm.get_messages())
+            self.save_messages(self._current_id, stm.get_messages(include_status=True))
         conv_id = self.create_conversation()
         self._current_id = conv_id
         stm.clear()
