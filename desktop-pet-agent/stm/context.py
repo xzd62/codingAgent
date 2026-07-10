@@ -46,7 +46,6 @@ class SessionContext:
         self._trim()
 
     def _clean_orphaned_tools(self):
-        """移除没有对应 assistant(tool_calls) 的孤儿 tool 消息。"""
         clean = []
         expect_tool = 0
         for m in self._messages:
@@ -56,9 +55,23 @@ class SessionContext:
             elif m.get("role") == "tool" and expect_tool > 0:
                 clean.append(m)
                 expect_tool -= 1
-            elif m.get("role") != "tool":
-                clean.append(m)
+            else:
+                if expect_tool > 0:
+                    while clean and clean[-1].get("role") in ("tool", "assistant"):
+                        if clean[-1].get("role") == "assistant":
+                            clean.pop()
+                            break
+                        clean.pop()
+                if m.get("role") != "tool":
+                    clean.append(m)
                 expect_tool = 0
+        # 循环结束后如果还有未配对的 tool_calls，回退
+        if expect_tool > 0:
+            while clean and clean[-1].get("role") in ("tool", "assistant"):
+                if clean[-1].get("role") == "assistant":
+                    clean.pop()
+                    break
+                clean.pop()
         self._messages = clean
 
     def count_messages(self) -> int:

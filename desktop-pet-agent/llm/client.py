@@ -40,6 +40,13 @@ class LLMClient:
         if tools:
             request_body["tools"] = tools
         response = self.client.post("/chat/completions", json=request_body)
+        if response.status_code == 400:
+            print("=== 400 ERROR ===")
+            print(response.text[:800])
+            print("=== MESSAGES ===")
+            for i, m in enumerate(messages):
+                tc = " [tool]" if m.get("tool_calls") else ""
+                print(f"  [{i}] {m['role']}{tc}: {str(m.get('content',''))[:80]}")
         response.raise_for_status()
         data = response.json()
         return data["choices"][0]["message"]
