@@ -59,8 +59,19 @@ class Agent:
                 for tc in reply["tool_calls"]:
                     name = tc["function"]["name"]
                     args = json.loads(tc["function"]["arguments"])
-                    self._on_status(f"调用工具 {name}")
-                    self._stm.add_message("status", f"调用工具 {name}")
+                    label = f"-> 调用工具: {name}"
+                    if name == "read_file":
+                        label += f" {args.get('path', '')}"
+                    elif name == "glob":
+                        label += f" {args.get('pattern', '')}"
+                    elif name == "edit_file":
+                        label += f" {args.get('path', '')}"
+                    elif name == "grep":
+                        gp = args.get('pattern', '')
+                        gpath = args.get('path', '')
+                        label += f" {gp} in {gpath}" if gpath else f" {gp}"
+                    self._on_status(label)
+                    self._stm.add_message("status", label)
 
                     if name == "bash":
                         cmd = f"运行: {args.get('command', '')}"
@@ -89,6 +100,14 @@ class Agent:
                         if wc:
                             self._on_status(wc)
                             self._stm.add_message("status", wc)
+                    elif name == "glob":
+                        cnt = len(obs.get("files", []))
+                        self._on_status(f"({cnt}个匹配)")
+                        self._stm.add_message("status", f"({cnt}个匹配)")
+                    elif name == "grep":
+                        cnt = len(obs.get("matches", []))
+                        self._on_status(f"（{cnt}个匹配）")
+                        self._stm.add_message("status", f"（{cnt}个匹配）")
 
                     self._stm.add_message("tool", json.dumps(obs, ensure_ascii=False),
                                           tool_call_id=tc["id"])
@@ -107,8 +126,13 @@ class Agent:
                         args = json.loads(args_raw) if args_raw.startswith("{") else {"path": args_raw}
                     except json.JSONDecodeError:
                         args = {"path": args_raw}
-                    self._on_status(f"调用工具 {tname}")
-                    self._stm.add_message("status", f"调用工具 {tname}")
+                    label = f"-> 调用工具: {tname}"
+                    if tname == "read_file":
+                        label += f" {args.get('path', '')}"
+                    elif tname == "glob":
+                        label += f" {args.get('pattern', '')}"
+                    self._on_status(label)
+                    self._stm.add_message("status", label)
                     if tname == "bash":
                         cmd = f"运行: {args.get('command', '')}"
                         self._on_status(cmd)
@@ -126,7 +150,10 @@ class Agent:
                         wc = args.get("content", "")
                         if wc:
                             self._on_status(wc)
-                            self._stm.add_message("status", wc)
+                    elif tname == "glob":
+                        cnt = len(obs.get("files", []))
+                        self._on_status(f"({cnt}个匹配)")
+                        self._stm.add_message("status", f"({cnt}个匹配)")
                     self._stm.add_message("assistant", text)
                     self._stm.add_message("tool", json.dumps(obs, ensure_ascii=False),
                                           tool_call_id=tname)
@@ -162,7 +189,19 @@ class Agent:
                 for tc in reply["tool_calls"]:
                     name = tc["function"]["name"]
                     args = json.loads(tc["function"]["arguments"])
-                    msg = f"调用工具 {name}"
+                    msg = f"-> 调用工具: {name}"
+                    if name == "read_file":
+                        msg += f" {args.get('path', '')}"
+                    elif name == "glob":
+                        msg += f" {args.get('pattern', '')}"
+                    elif name == "edit_file":
+                        label += f" {args.get('path', '')}"
+                    elif name == "edit_file":
+                        msg += f" {args.get('path', '')}"
+                    elif name == "grep":
+                        gp = args.get('pattern', '')
+                        gpath = args.get('path', '')
+                        msg += f" {gp} in {gpath}" if gpath else f" {gp}"
                     self._on_status(msg); self._stm.add_message("status", msg)
 
                     if name == "bash":
@@ -182,6 +221,14 @@ class Agent:
                         if out:
                             omsg = f"输出: {out[:300]}"
                             self._on_status(omsg); self._stm.add_message("status", omsg)
+                    elif name == "glob":
+                        cnt = len(obs.get("files", []))
+                        self._on_status(f"({cnt}个匹配)")
+                        self._stm.add_message("status", f"({cnt}个匹配)")
+                    elif name == "grep":
+                        cnt = len(obs.get("matches", []))
+                        self._on_status(f"（{cnt}个匹配）")
+                        self._stm.add_message("status", f"（{cnt}个匹配）")
 
                     self._stm.add_message("tool", json.dumps(obs, ensure_ascii=False),
                                           tool_call_id=tc["id"])
@@ -201,7 +248,11 @@ class Agent:
                         args = json.loads(args_raw) if args_raw.startswith("{") else {"path": args_raw}
                     except json.JSONDecodeError:
                         args = {"path": args_raw}
-                    msg = f"调用工具 {tname}"
+                    msg = f"-> 调用工具: {tname}"
+                    if tname == "read_file":
+                        msg += f" {args.get('path', '')}"
+                    elif tname == "glob":
+                        msg += f" {args.get('pattern', '')}"
                     self._on_status(msg); self._stm.add_message("status", msg)
                     if tname == "bash":
                         cmd = f"运行: {args.get('command', '')}"
@@ -218,6 +269,10 @@ class Agent:
                         if out:
                             omsg = f"输出: {out[:300]}"
                             self._on_status(omsg); self._stm.add_message("status", omsg)
+                    elif tname == "glob":
+                        cnt = len(obs.get("files", []))
+                        self._on_status(f"({cnt}个匹配)")
+                        self._stm.add_message("status", f"({cnt}个匹配)")
                     self._stm.add_message("assistant", text)
                     self._stm.add_message("tool", json.dumps(obs, ensure_ascii=False),
                                           tool_call_id=tname)
