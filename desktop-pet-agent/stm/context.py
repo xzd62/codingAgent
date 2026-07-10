@@ -41,9 +41,25 @@ class SessionContext:
         self._messages.clear()
 
     def load_messages(self, messages: list[dict]):
-        """替换当前所有消息（用于从 SQLite 恢复会话）。"""
         self._messages = list(messages)
+        self._clean_orphaned_tools()
         self._trim()
+
+    def _clean_orphaned_tools(self):
+        """移除没有对应 assistant(tool_calls) 的孤儿 tool 消息。"""
+        clean = []
+        expect_tool = 0
+        for m in self._messages:
+            if m.get("role") == "assistant" and m.get("tool_calls"):
+                clean.append(m)
+                expect_tool = len(m["tool_calls"])
+            elif m.get("role") == "tool" and expect_tool > 0:
+                clean.append(m)
+                expect_tool -= 1
+            elif m.get("role") != "tool":
+                clean.append(m)
+                expect_tool = 0
+        self._messages = clean
 
     def count_messages(self) -> int:
         return len(self._messages)
