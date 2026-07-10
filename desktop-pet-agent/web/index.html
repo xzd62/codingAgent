@@ -531,7 +531,7 @@ window.addEventListener('pywebviewready', async () => {
   const ps = await pywebview.api.get_pet_size();
   document.getElementById('petPanel').style.width = ps + 'px';
   document.getElementById('petSizeInput').value = ps;
-  // 默认表情
+  refreshTokenInfo();
   
 });
 </script>
