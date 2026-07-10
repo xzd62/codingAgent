@@ -12,6 +12,7 @@ import tool.glob
 import tool.grep
 import tool.edit_file
 import tool.bash
+import tool.verify
 
 from ui.webui import run
 

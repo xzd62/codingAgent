@@ -100,6 +100,14 @@ class Agent:
                         if wc:
                             self._on_status(wc)
                             self._stm.add_message("status", wc)
+                        if args["path"].endswith(".py"):
+                            vr = registry.dispatch('verify', {'path': args['path']})
+                            if vr.get("valid") == False:
+                                obs["verify_error"] = vr.get("error", "")
+                                self._on_status(f"语法错误: {vr.get('error', '')}")
+                                self._stm.add_message("status", f"语法错误: {vr.get('error', '')}")
+
+
                     elif name == "glob":
                         cnt = len(obs.get("files", []))
                         self._on_status(f"({cnt}个匹配)")
@@ -117,7 +125,7 @@ class Agent:
 
             import re
             parsed = False
-            for tname in ("read_file", "write_file", "glob", "grep", "edit_file", "bash"):
+            for tname in ("read_file", "write_file", "glob", "grep", "edit_file", "bash", "verify"):
                 pattern = rf"<{tname}>(.*?)</{tname}>"
                 match = re.search(pattern, text, re.DOTALL)
                 if match:
@@ -195,8 +203,6 @@ class Agent:
                     elif name == "glob":
                         msg += f" {args.get('pattern', '')}"
                     elif name == "edit_file":
-                        label += f" {args.get('path', '')}"
-                    elif name == "edit_file":
                         msg += f" {args.get('path', '')}"
                     elif name == "grep":
                         gp = args.get('pattern', '')
@@ -239,7 +245,7 @@ class Agent:
 
             import re
             parsed = False
-            for tname in ("read_file", "write_file", "glob", "grep", "edit_file", "bash"):
+            for tname in ("read_file", "write_file", "glob", "grep", "edit_file", "bash", "verify"):
                 pattern = rf"<{tname}>(.*?)</{tname}>"
                 match = re.search(pattern, text, re.DOTALL)
                 if match:
