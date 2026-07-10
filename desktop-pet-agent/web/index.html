@@ -109,7 +109,7 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
     </div>
     <div class="messages" id="messages"></div>
     <div style="padding:2px 32px 0;text-align:right;font-size:10px;color:#a08c78">
-      <span id="tokenInfo" onclick="compressNow()" style="cursor:pointer" title="点击手动压缩">—</span>
+      <span id="tokenInfo" style="font-size:10px;color:#a08c78">—</span>
     </div>
     <div class="input-area">
       <textarea id="input" rows="2" placeholder="输入消息…" onkeydown="onInputKey(event)"></textarea>
@@ -265,10 +265,6 @@ async function refreshTokenInfo() {
     const k = (data.tokens / 1000).toFixed(0);
     document.getElementById('tokenInfo').textContent = k + 'K (' + data.pct + '%)';
   } catch(e) {}
-}
-async function compressNow() {
-  await pywebview.api.compress_now();
-  refreshTokenInfo();
 }
 function onInputKey(e) { if (e.key==='Enter'&&!e.shiftKey) { e.preventDefault(); send(); } }
 
