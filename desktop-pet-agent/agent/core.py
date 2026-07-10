@@ -39,8 +39,21 @@ class Agent:
         self._stm.add_message(role="user",content=user_input)
         tools = registry.get_schemas()
         first = True
+        tool_rounds = 0
 
         while True:
+            tool_rounds += 1
+            if tool_rounds > 10:
+                history = self._stm.get_messages()
+                final = self._llm.chat(history, tools)
+                text = final.get("content") or "(任务步骤过多，已自动结束)"
+                self._stm.add_message("assistant", text)
+                self._ltm.try_summarize(
+                    self._llm,
+                    [{"role": "user", "content": user_input},
+                     {"role": "assistant", "content": text}],
+                )
+                return text
             if first:
                 self._on_status("思考中…")
                 self._stm.add_message("status", "思考中…")

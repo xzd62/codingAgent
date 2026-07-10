@@ -70,7 +70,11 @@ class LLMClient:
     # ------------------------------------------------------------------
 
     def count_tokens(self, text: str) -> int:
+        if not text:
+            return 0
         import re
         zh_chars = len(re.findall(r"[\u4e00-\u9fff]", text))
-        en_words = len(re.findall(r"[a-zA-Z]+", text))
-        return int(zh_chars / 1.5 + en_words * 1.5 + 1)
+        total_chars = len(text)
+        # 中文字符按 1.5 token，其余字符（代码、英文、符号）按 2.5 token 估算
+        rest = total_chars - zh_chars
+        return int(zh_chars / 1.5 + rest / 2.5 + 1)
