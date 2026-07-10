@@ -44,7 +44,8 @@ SYSTEM_PROMPT = "你是一个代码桌宠。当用户要求读取、写入或查
 LTM_SUMMARIZE_INTERVAL = 10
 
 # 工作目录（可运行时修改）
-_work_dir = Path.cwd()
+_work_dir_env = os.getenv("WORK_DIR", "")
+_work_dir = Path(_work_dir_env) if _work_dir_env else Path.cwd()
 
 
 def get_work_dir() -> Path:
@@ -54,6 +55,7 @@ def get_work_dir() -> Path:
 def set_work_dir(path: str | Path):
     global _work_dir
     _work_dir = Path(path).resolve()
+    _update_env("WORK_DIR", str(_work_dir))
 
 
 # 灵魂（soul）路径

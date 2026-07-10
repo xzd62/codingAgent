@@ -11,7 +11,7 @@ from config.settings import (
     get_avatar_path, set_avatar_path,
     get_llm_model, set_llm_model,
     get_llm_api_key, set_llm_api_key,
-    set_work_dir,
+    get_work_dir, set_work_dir,
 )
 from llm.client import LLMClient
 from ltm.store import MemoryStore
@@ -148,6 +148,25 @@ class Api:
     def get_pet_size(self) -> int:
         import os
         return int(os.getenv("PET_SIZE", "180"))
+
+    # ---- 工作目录 ----
+
+    def get_workdir(self) -> str:
+        return str(get_work_dir())
+
+    def pick_workdir(self) -> str:
+        import tkinter as tk
+        from tkinter import filedialog
+        root = tk.Tk()
+        root.withdraw()
+        path = filedialog.askdirectory(title="选择工作目录", initialdir=str(get_work_dir()))
+        root.destroy()
+        if path:
+            set_work_dir(path)
+        return str(get_work_dir())
+
+    def rename_conv(self, conv_id: int, name: str):
+        self._session_mgr.rename_conversation(conv_id, name)
 
     # ---- 设置 ----
 

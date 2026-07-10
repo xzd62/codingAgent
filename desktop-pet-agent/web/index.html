@@ -81,6 +81,7 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
   <div class="sidebar-header">
     <svg width="22" height="22" viewBox="0 0 22 22"><rect x="3" y="7" width="16" height="12" rx="2" fill="none" stroke="#e8783a" stroke-width="2"/><circle cx="11" cy="13" r="2" fill="#e8783a"/></svg>
     CodePet
+    <span id="workdirBtn" onclick="pickWorkdir()" style="margin-left:auto;font-size:11px;color:#7a6050;cursor:pointer;padding:2px 6px;border-radius:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:110px" title="点击更改工作目录">📁</span>
   </div>
   <div class="nav">
     <button class="nav-item active" onclick="switchPage('chat',this)">
@@ -99,7 +100,9 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
 <div class="main">
   <div class="page active" id="pageChat">
     <div class="header">
-      <h2 id="convTitle">对话</h2>
+      <div>
+        <h2 id="convTitle" style="display:inline">对话</h2>
+      </div>
       <button class="btn btn-secondary" onclick="newSession()">+ 新对话</button>
     </div>
     <div class="messages" id="messages"></div>
@@ -263,6 +266,24 @@ function setPetSize(val) {
   document.getElementById('petSizeInput').value = w;
   pywebview.api.save_pet_size(w);
 }
+async function pickWorkdir() {
+  const path = await pywebview.api.pick_workdir();
+  document.getElementById('workdirBtn').textContent = '📁 ' + path.split('\\').pop();
+  document.getElementById('workdirBtn').title = path;
+  // 切换工作目录后重新加载会话
+  document.getElementById('messages').innerHTML = '';
+  await loadConvs();
+  if (convs.length > 0) await switchConv(convs[0].id);
+  else await newSession();
+}
+async function renameConv(id) {
+  const hit = convs.find(c=>c.id===id);
+  const name = prompt('输入新名称:', hit ? hit.name : '');
+  if (name) {
+    await pywebview.api.rename_conv(id, name);
+    loadConvs();
+  }
+}
 
 function appendStatus(text) {
   const msgs = document.getElementById('messages');
@@ -335,6 +356,8 @@ async function loadConvs() {
     const d = document.createElement('div');
     d.className = 'nav-conv-item'+(i===0?' active':'');
     d.innerHTML = '<span>'+esc(c.name)+'</span><span class="del" onclick="event.stopPropagation();deleteConv('+c.id+')">✕</span>';
+    d.title = '双击重命名';
+    d.ondblclick = () => renameConv(c.id);
     d.onclick = () => switchConv(c.id);
     el.appendChild(d);
   });
@@ -462,9 +485,15 @@ function showDefaultAvatar() {
 window.addEventListener('pywebviewready', async () => {
   await loadConvs();
   if (convs.length > 0) await switchConv(convs[0].id);
+  // 工作目录
+  // 工作目录
+  const wd = await pywebview.api.get_workdir();
+  document.getElementById('workdirBtn').textContent = '📁 ' + wd.split('\\').pop();
+  document.getElementById('workdirBtn').title = wd;
+  // 头像
   const avatarData = await pywebview.api.get_avatar_data();
   if (avatarData) updatePetAvatar(avatarData);
-  // 加载宠物面板大小
+  // 宠物面板大小
   const ps = await pywebview.api.get_pet_size();
   document.getElementById('petPanel').style.width = ps + 'px';
   document.getElementById('petSizeInput').value = ps;
