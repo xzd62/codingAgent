@@ -1,11 +1,5 @@
-import tkinter as tk
-from tkinter import filedialog
-from pathlib import Path
-
 import pystray
 from PIL import Image, ImageDraw
-
-from config.settings import get_work_dir, set_work_dir
 
 
 def _create_icon_image(size: int = 64):
@@ -42,31 +36,14 @@ def _create_icon_image(size: int = 64):
 class TrayApp:
     """系统托盘图标（负责生命周期，不负责 UI 逻辑）。"""
 
-    def __init__(self, on_open: callable, on_settings: callable, on_exit: callable, on_select_workdir: callable | None = None):
+    def __init__(self, on_open: callable, on_exit: callable):
         self._on_open = on_open
-        self._on_settings = on_settings
         self._on_exit = on_exit
-        self._on_select_workdir = on_select_workdir or self._choose_workdir
         self._icon: pystray.Icon | None = None
-
-    @staticmethod
-    def _choose_workdir():
-        root = tk.Tk()
-        root.withdraw()
-        path = filedialog.askdirectory(
-            title="选择工作目录",
-            initialdir=str(get_work_dir()),
-        )
-        root.destroy()
-        if path:
-            set_work_dir(Path(path))
 
     def run(self):
         menu = pystray.Menu(
-            pystray.MenuItem("打开控制台", self._on_open),
-            pystray.Menu.SEPARATOR,
-            pystray.MenuItem("设置", self._on_settings),
-            pystray.MenuItem("选择工作目录", self._on_select_workdir),
+            pystray.MenuItem("打开 CodePet", self._on_open),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("退出", self._on_exit),
         )

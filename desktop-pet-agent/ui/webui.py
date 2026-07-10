@@ -240,7 +240,6 @@ class Api:
 def _start_tray():
     tray = TrayApp(
         on_open=lambda: None,
-        on_settings=lambda: None,
         on_exit=lambda: _quit(),
     )
     tray.run()
