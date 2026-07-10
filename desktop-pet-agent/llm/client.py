@@ -32,12 +32,6 @@ class LLMClient:
 
 
     def chat(self, messages: list[dict], tools: list[dict] | None = None) -> dict:
-        """发送对话消息，返回助手回复消息（含 content 和/或 tool_calls）。
-
-        返回格式：
-          - 纯文本: {"role": "assistant", "content": "你好"}
-          - 调工具: {"role": "assistant", "content": None, "tool_calls": [...]}
-        """
         request_body = {
             "model": self.model,
             "messages": messages,

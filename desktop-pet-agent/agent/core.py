@@ -35,7 +35,6 @@ class Agent:
             full_prompt += f"\n\n## 长期记忆\n{memories}"
 
         self._stm.add_system(full_prompt)
-
     def process(self, user_input: str) -> str:
         self._stm.add_message(role="user",content=user_input)
         tools = registry.get_schemas()
@@ -50,12 +49,13 @@ class Agent:
             reply = self._llm.chat(history, tools)
 
             if reply.get("tool_calls"):
-                content = reply.get("content") or ""
-                self._stm.add_message("assistant", "",
+                content = reply.get("content")
+                content_str = content if content else ""
+                self._stm.add_message("assistant", content if content else None,
                                       tool_calls=reply["tool_calls"])
-                if content:
-                    self._on_status(content)
-                    self._stm.add_message("status", content)
+                if content_str:
+                    self._on_status(content_str)
+                    self._stm.add_message("status", content_str)
                 for tc in reply["tool_calls"]:
                     name = tc["function"]["name"]
                     args = json.loads(tc["function"]["arguments"])
@@ -67,7 +67,14 @@ class Agent:
                         self._on_status(cmd)
                         self._stm.add_message("status", cmd)
 
-                    obs = registry.dispatch(name, args)
+                    try:
+                        obs = registry.dispatch(name, args)
+                    except Exception as e:
+                        obs = {"success": False, "error": f"工具执行异常: {e}"}
+
+                    if not obs.get("success", True):
+                        self._on_status(f"工具执行失败: {obs.get('error', '未知错误')}")
+                        self._stm.add_message("status", f"工具执行失败: {obs.get('error', '未知错误')}")
 
                     if name == "bash":
                         out = obs.get("output", "")

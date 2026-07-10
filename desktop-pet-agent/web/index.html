@@ -52,7 +52,9 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
 .messages{flex:1;overflow-y:auto;padding:20px 32px;min-height:0}
 .msg{margin-bottom:14px}
 .msg-header{font-size:12px;color:#a08c78;margin-bottom:4px}
-.msg-bubble{padding:10px 14px;border-radius:10px;font-size:14px;line-height:1.7;white-space:pre-wrap}
+.msg-bubble{padding:10px 14px;border-radius:10px;font-size:14px;line-height:1.7;white-space:pre-wrap;user-select:text;position:relative}
+.msg-bubble .copy-btn{display:none;position:absolute;top:4px;right:4px;padding:2px 6px;border:none;border-radius:4px;background:#ede0d0;cursor:pointer;font-size:10px;color:#7a6050}
+.msg:hover .copy-btn{display:block}
 .msg.user{display:flex;flex-direction:column;align-items:flex-end}
 .msg.user .msg-bubble{background:#e8d8c4;max-width:80%}
 .msg.assistant .msg-bubble{background:white;border:1px solid #e8d8c4;max-width:90%}
@@ -118,7 +120,7 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
       <div class="settings-tabs">
         <button class="settings-tab active" onclick="switchSettingTab(this,'stSoul')">灵魂</button>
         <button class="settings-tab" onclick="switchSettingTab(this,'stModel')">模型</button>
-        <button class="settings-tab" onclick="switchSettingTab(this,'stAvatar')">头像</button>
+        <button class="settings-tab" onclick="switchSettingTab(this,'stAvatar')">立绘</button>
         <button class="settings-tab" onclick="switchSettingTab(this,'stTts')">语音</button>
       </div>
       <div class="settings-content active" id="stSoul">
@@ -142,8 +144,9 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
         <div style="text-align:right"><button class="btn btn-primary" onclick="saveModel()">保存模型设定</button></div>
       </div>
       <div class="settings-content" id="stAvatar">
+        <p style="font-size:12px;color:#a08c78;margin-bottom:10px">设置桌宠的默认立绘，表情文件自动在 character/ 目录下关联。</p>
         <div style="margin-bottom:12px">
-          <input type="file" id="avatarFileInput" accept="image/png,image/jpeg,image/gif,image/bmp" hidden onchange="onAvatarFile(event)">
+          <input type="file" id="avatarFileInput" accept="image/png,image/jpeg,image/gif" hidden onchange="onAvatarFile(event)">
           <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
             <input type="text" id="avatarPathDisplay" readonly style="flex:1;padding:8px;border:1px solid #e8d8c4;border-radius:6px;font-size:12px;background:#f5ede0;color:#7a6050">
             <button class="btn btn-secondary" onclick="document.getElementById('avatarFileInput').click()">选择图片</button>
@@ -157,10 +160,8 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
             <polygon points="88,40 98,15 78,30" fill="#FF9F43"/>
             <polygon points="35,36 25,20 43,33" fill="#FFB8B8"/>
             <polygon points="85,36 95,20 77,33" fill="#FFB8B8"/>
-            <ellipse cx="48" cy="50" rx="6" ry="7" fill="#333"/>
-            <ellipse cx="72" cy="50" rx="6" ry="7" fill="#333"/>
-            <circle cx="48" cy="48" r="2.5" fill="white"/>
-            <circle cx="72" cy="48" r="2.5" fill="white"/>
+            <ellipse cx="48" cy="50" rx="4" ry="5" fill="#333"/>
+            <ellipse cx="72" cy="50" rx="4" ry="5" fill="#333"/>
             <polygon points="57,65 63,65 60,70" fill="#FF6B6B"/>
             <path d="M52,71 Q58,76 60,71 Q62,76 68,71" fill="none" stroke="#555" stroke-width="2"/>
           </svg>
@@ -226,8 +227,26 @@ function appendMsg(role, content) {
   const d = document.createElement('div'); d.className = 'msg '+role;
   const labels = {user:'你',assistant:'CodePet'};
   const l = labels[role]||'';
-  d.innerHTML = l ? '<div class="msg-header">'+esc(l)+'</div><div class="msg-bubble">'+esc(content)+'</div>' : '<div class="msg-bubble">'+esc(content)+'</div>';
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  bubble.textContent = content;
+  const btn = document.createElement('button');
+  btn.className = 'copy-btn';
+  btn.textContent = '复制';
+  btn.onclick = () => copyText(btn, content);
+  bubble.appendChild(btn);
+  if (l) {
+    const h = document.createElement('div'); h.className = 'msg-header'; h.textContent = l;
+    d.appendChild(h);
+  }
+  d.appendChild(bubble);
   el.appendChild(d); el.scrollTop = el.scrollHeight;
+}
+function copyText(btn, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '已复制';
+    setTimeout(() => btn.textContent = '复制', 2000);
+  }).catch(() => { btn.textContent = '失败'; });
 }
 function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 function setBusy(b) {
@@ -270,12 +289,12 @@ async function pickWorkdir() {
   const path = await pywebview.api.pick_workdir();
   document.getElementById('workdirBtn').textContent = '📁 ' + path.split('\\').pop();
   document.getElementById('workdirBtn').title = path;
-  // 切换工作目录后重新加载会话
   document.getElementById('messages').innerHTML = '';
   await loadConvs();
   if (convs.length > 0) await switchConv(convs[0].id);
   else await newSession();
 }
+
 async function renameConv(id) {
   const hit = convs.find(c=>c.id===id);
   const name = prompt('输入新名称:', hit ? hit.name : '');
@@ -291,6 +310,7 @@ function appendStatus(text) {
   d.className = 'msg msg-status';
   d.innerHTML = '<div class="msg-bubble" style="color:#a08c78;font-size:12px;font-style:italic;padding:2px 14px">'+esc(text)+'</div>';
   msgs.appendChild(d); msgs.scrollTop = msgs.scrollHeight;
+
 }
 
 function animateReply(text) {
@@ -363,6 +383,7 @@ async function loadConvs() {
   });
 }
 async function switchConv(id) {
+  if (processing) return;
   await pywebview.api.switch_conv(id);
   document.querySelectorAll('.nav-conv-item').forEach(e=>e.classList.remove('active'));
   const hit = convs.find(c=>c.id===id);
@@ -380,6 +401,7 @@ async function switchConv(id) {
   switchPage('chat', chatBtn);
 }
 async function newSession() {
+  if (processing) return;
   await pywebview.api.new_conv();
   document.getElementById('messages').innerHTML = '';
   document.getElementById('convTitle').textContent = '新对话';
@@ -387,6 +409,7 @@ async function newSession() {
   switchPage('chat', document.querySelectorAll('.nav-item')[0]);
 }
 async function deleteConv(id) {
+  if (processing) return;
   if (!confirm('确定删除该对话？')) return;
   await pywebview.api.delete_conv(id);
   document.getElementById('messages').innerHTML = '';
@@ -497,6 +520,8 @@ window.addEventListener('pywebviewready', async () => {
   const ps = await pywebview.api.get_pet_size();
   document.getElementById('petPanel').style.width = ps + 'px';
   document.getElementById('petSizeInput').value = ps;
+  // 默认表情
+  
 });
 </script>
 </body>

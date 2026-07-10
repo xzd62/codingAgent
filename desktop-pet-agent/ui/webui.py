@@ -125,16 +125,19 @@ class Api:
             return f"（出错了：{e}）"
 
     def _stream_worker(self, text: str):
-        """后台线程：调 process()，结果通过 status_queue 返回（__REPLY__ / __ERROR__）。"""
+        """后台线程：调 process()，结果通过 status_queue 返回。"""
+        saved_conv_id = self._session_mgr.get_current_id()
         try:
             reply = self._agent.process(text)
-            self._save_conv()
+            self._save_conv(conv_id=saved_conv_id)
+            reply = reply.lstrip("：:")
             self._status_queue.append(f"__REPLY__:{reply}")
         except Exception as e:
             self._status_queue.append(f"__ERROR__:{e}")
 
-    def _save_conv(self):
-        conv_id = self._session_mgr.get_current_id()
+
+    def _save_conv(self, conv_id: int = 0):
+        cid = conv_id or self._session_mgr.get_current_id()
         if conv_id:
             msgs = self._stm.get_messages(include_status=True)
             self._session_mgr.save_messages(conv_id, msgs)
@@ -183,16 +186,16 @@ class Api:
         set_avatar_path(path)
 
     def save_avatar_data(self, data_url: str):
-        """保存 base64 图片数据到本地文件，返回保存后的路径。"""
+        """保存 base64 图片数据到 character/ 目录。"""
         import re
         match = re.match(r"data:image/(\w+);base64,(.+)", data_url)
         if not match:
             return ""
         ext = match.group(1)
         raw = base64.b64decode(match.group(2))
-        save_dir = Path(__file__).resolve().parent.parent / "data"
+        save_dir = Path(__file__).resolve().parent.parent / "character"
         save_dir.mkdir(parents=True, exist_ok=True)
-        save_path = save_dir / f"avatar.{ext}"
+        save_path = save_dir / f"default.{ext}"
         save_path.write_bytes(raw)
         set_avatar_path(str(save_path))
         return str(save_path)

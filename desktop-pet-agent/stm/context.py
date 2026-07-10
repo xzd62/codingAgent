@@ -53,7 +53,8 @@ class SessionContext:
             return 0
         total = 0
         for msg in self._messages:
-            total += self._tokenizer(msg.get("content", ""))
+            c = msg.get("content")
+            total += self._tokenizer(c if isinstance(c, str) else "")
         return total
 
     # ------------------------------------------------------------------
@@ -64,11 +65,12 @@ class SessionContext:
         if not self._tokenizer:
             return
         while self._messages and self.count_tokens() > self._max_tokens:
-            # 跳过索引 0 的 system prompt，优先丢弃最旧的对话
-            if len(self._messages) > 1 and self._messages[0].get("role") == "system":
-                self._messages.pop(1)
-            else:
-                self._messages.pop(0)
+            idx = 1 if (len(self._messages) > 1 and self._messages[0].get("role") == "system") else 0
+            removed = self._messages.pop(idx)
+            # 如果删掉的是 assistant(tool_calls)，连带删掉后续的 tool 消息
+            if removed.get("role") == "assistant" and removed.get("tool_calls"):
+                while idx < len(self._messages) and self._messages[idx].get("role") == "tool":
+                    self._messages.pop(idx)
 
     def __repr__(self) -> str:
         return (

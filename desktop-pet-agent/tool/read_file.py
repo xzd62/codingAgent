@@ -35,9 +35,9 @@ def read_file_handler(args):
     if work_dir not in resolved.parents and resolved != work_dir:
         return {"success": False, "error": "不允许读取工作目录之外的文件"}
 
-    # 安全校验：限制最大 1MB
-    if resolved.stat().st_size > 1024 * 1024:
-        return {"success": False, "error": "文件超过 1MB，不支持读取"}
+    # 安全校验：限制最大 500KB
+    if resolved.stat().st_size > 500 * 1024:
+        return {"success": False, "error": "文件超过 500KB，不支持读取"}
 
     # 尝试 UTF-8，失败则回退系统编码
     try:
@@ -46,6 +46,10 @@ def read_file_handler(args):
         import locale
         encoding = locale.getpreferredencoding()
         content = resolved.read_text(encoding=encoding)
+
+    # 结果截断，避免撑爆 LLM 上下文
+    if len(content) > 30000:
+        content = content[:30000] + "\n\n...（内容过长已截断）"
 
     return {"success": True, "content": content}
 
