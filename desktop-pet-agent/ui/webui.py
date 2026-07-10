@@ -105,7 +105,7 @@ class Api:
             self._save_conv(conv_id=saved_conv_id)
             reply = reply.lstrip("：:")
             self._status_queue.append(f"__REPLY__:{reply}")
-            if reply and self._stm.get_token_info()["pct"] >= 50:
+            if reply and self._stm.get_token_info()["pct"] >= 80:
                 self._auto_compress()
         except Exception as e:
             self._status_queue.append(f"__ERROR__:{e}")
@@ -260,7 +260,7 @@ def run():
         resizable=True,
         js_api=Api(),
     )
-    webview.start(debug=False)
+    webview.start(debug=True)
 
 
 if __name__ == "__main__":

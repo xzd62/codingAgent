@@ -40,6 +40,14 @@ class LLMClient:
         if tools:
             request_body["tools"] = tools
         response = self.client.post("/chat/completions", json=request_body)
+        if response.status_code == 400:
+            print("=== 400 ===")
+            print("ERROR:", response.text[:600])
+            print("MSG ROLES:")
+            for i, m in enumerate(messages):
+                extra = " [tool_calls]" if m.get("tool_calls") else ""
+                print(f"  [{i}] {m['role']}{extra}: {str(m.get('content',''))[:60]}")
+            print("TOOLS:", len(tools) if tools else 0)
         response.raise_for_status()
         data = response.json()
         return data["choices"][0]["message"]
@@ -70,11 +78,7 @@ class LLMClient:
     # ------------------------------------------------------------------
 
     def count_tokens(self, text: str) -> int:
-        if not text:
-            return 0
         import re
         zh_chars = len(re.findall(r"[\u4e00-\u9fff]", text))
-        total_chars = len(text)
-        # 中文字符按 1.5 token，其余字符（代码、英文、符号）按 2.5 token 估算
-        rest = total_chars - zh_chars
-        return int(zh_chars / 1.5 + rest / 2.5 + 1)
+        en_words = len(re.findall(r"[a-zA-Z]+", text))
+        return int(zh_chars / 1.5 + en_words * 1.5 + 1)
