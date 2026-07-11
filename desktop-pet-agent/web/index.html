@@ -118,17 +118,13 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
     <div class="header"><h2>设置</h2></div>
     <div class="settings-body">
       <div class="settings-tabs">
-        <button class="settings-tab active" onclick="switchSettingTab(this,'stSoul')">灵魂</button>
-        <button class="settings-tab" onclick="switchSettingTab(this,'stModel')">模型</button>
+        <button class="settings-tab active" onclick="switchSettingTab(this,'stModel')">模型</button>
         <button class="settings-tab" onclick="switchSettingTab(this,'stAvatar')">立绘</button>
+        <button class="settings-tab" onclick="switchSettingTab(this,'stSoul')">灵魂</button>
         <button class="settings-tab" onclick="switchSettingTab(this,'stTts')">语音</button>
+        <button class="settings-tab" onclick="switchSettingTab(this,'stRule')">规则</button>
       </div>
-      <div class="settings-content active" id="stSoul">
-        <p style="font-size:12px;color:#a08c78;margin-bottom:8px">人格设定。留空=默认性格，修改后需要重启对话生效。</p>
-        <textarea id="soulInput"></textarea>
-        <div style="margin-top:12px;text-align:right"><button class="btn btn-primary" onclick="saveSoul()">保存灵魂设定</button></div>
-      </div>
-      <div class="settings-content" id="stModel">
+      <div class="settings-content active" id="stModel">
         <p style="font-size:12px;color:#a08c78;margin-bottom:12px">选择 AI 模型和配置 API 密钥。</p>
         <div style="margin-bottom:16px">
           <label style="font-size:13px;font-weight:bold;display:block;margin-bottom:6px">模型</label>
@@ -142,6 +138,11 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
           <input type="password" id="apiKeyInput" style="width:100%;padding:10px;border:1px solid #e8d8c4;border-radius:8px;font-size:13px;font-family:inherit;outline:none;background:white">
         </div>
         <div style="text-align:right"><button class="btn btn-primary" onclick="saveModel()">保存模型设定</button></div>
+      </div>
+      <div class="settings-content" id="stSoul">
+        <p style="font-size:12px;color:#a08c78;margin-bottom:8px">人格设定。留空=默认性格，修改后需要重启对话生效。</p>
+        <textarea id="soulInput"></textarea>
+        <div style="margin-top:12px;text-align:right"><button class="btn btn-primary" onclick="saveSoul()">保存灵魂设定</button></div>
       </div>
       <div class="settings-content" id="stAvatar">
         <p style="font-size:12px;color:#a08c78;margin-bottom:10px">设置桌宠的默认立绘，表情文件自动在 character/ 目录下关联。</p>
@@ -169,6 +170,9 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
       </div>
       <div class="settings-content" id="stTts">
         <p style="font-size:12px;color:#a08c78">语音合成功能开发中…</p>
+      </div>
+      <div class="settings-content" id="stRule">
+        <p style="font-size:12px;color:#a08c78">规则系统开发中…</p>
       </div>
     </div>
   </div>
