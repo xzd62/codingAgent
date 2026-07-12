@@ -43,8 +43,8 @@ class Api:
 
     def get_status_updates(self) -> str:
         items = list(self._status_queue)
-        self._status_queue[:] = [x for x in items if x.startswith("__") and not x.startswith("__TEXT__:")]
-        plain = [x for x in items if not x.startswith("__") or x.startswith("__TEXT__:")]
+        self._status_queue[:] = [x for x in items if x.startswith("__")]
+        plain = [x for x in items if not x.startswith("__")]
         return json.dumps(plain, ensure_ascii=False)
 
     def check_reply(self) -> str:
@@ -52,6 +52,9 @@ class Api:
             if item.startswith("__REPLY__:"):
                 self._status_queue.clear()
                 return item[10:]
+            if item == "__INTERRUPTED__":
+                self._status_queue.clear()
+                return item
             if item.startswith("__ERROR__:"):
                 self._status_queue.clear()
                 return f"__ERROR__:{item[10:]}"
@@ -123,6 +126,15 @@ class Api:
         saved_conv_id = self._session_mgr.get_current_id()
         try:
             reply = self._agent.process(text)
+            self._save_conv(conv_id=saved_conv_id)
+            reply = reply.lstrip("：:　 \t\n\r")
+            import re
+            mm = re.search(r"\[(.+?)\]", reply)
+            if mm:
+                self._pending_mood = mm.group(1).strip("：:")
+            self._status_queue.append(f"__REPLY__:{reply}")
+        except Exception as e:
+            self._status_queue.append(f"__ERROR__:{e}")
             self._save_conv(conv_id=saved_conv_id)
             reply = reply.lstrip("：:　 \t\n\r")
             # 提取表情标记 [xxx]

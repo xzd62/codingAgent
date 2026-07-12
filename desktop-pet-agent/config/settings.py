@@ -147,6 +147,18 @@ def set_llm_api_key(key: str):
     _update_env("LLM_API_KEY", key)
 
 
+# MCP Server 配置
+_MCP_CONFIG_PATH = Path(__file__).resolve().parent / "mcp_servers.json"
+
+
+def get_mcp_servers() -> list[dict]:
+    if _MCP_CONFIG_PATH.exists():
+        import json
+        data = json.loads(_MCP_CONFIG_PATH.read_text(encoding="utf-8"))
+        return data.get("servers", [])
+    return []
+
+
 _ENV_PATH = Path(__file__).resolve().parent.parent / "settings.env"
 
 

@@ -27,7 +27,7 @@ class LLMClient:
         """刷新运行时配置（模型名、API Key 变更后调用）。"""
         self.api_key = get_llm_api_key()
         self.model = get_llm_model()
-        self.client.headers.update({"Authorization": f"Bearer {self.api_key}"})
+        self.client = httpx.Client(base_url=self.base_url, headers={"Authorization": f"Bearer {self.api_key}"}, timeout=LLM_TIMEOUT)
 
 
 
@@ -53,7 +53,6 @@ class LLMClient:
         return data["choices"][0]["message"]
 
     def chat_stream(self, messages: list[dict]):
-        """流式对话，逐个 yield 文本 token。"""
         request_body = {
             "model": self.model,
             "messages": messages,

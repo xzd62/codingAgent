@@ -223,7 +223,7 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
 </div>
 
 <script>
-let convs = [], processing = false, statusTimer = null;
+let convs = [], processing = false, statusTimer = null, streamBuffer = '';
 
 function switchPage(name, btn) {
   document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
@@ -365,11 +365,18 @@ async function pollStatus() {
     }
   }
 }
+
 async function pollReply() {
   const reply = await pywebview.api.check_reply();
   if (!reply) return;
   if (reply.startsWith('__ERROR__:')) {
     appendStatus('出错了：'+reply.slice(10));
+    setBusy(false);
+    clearInterval(statusTimer);
+    return;
+  }
+  if (reply === '__INTERRUPTED__') {
+    appendStatus('已中断');
     setBusy(false);
     clearInterval(statusTimer);
     return;
@@ -427,7 +434,8 @@ async function switchConv(id) {
         appendMsg('assistant', m.content.slice(9));
       } else {
         appendStatus(m.content||'');
-  }
+      }
+    }
   // 加载规则
   const hasRules = await pywebview.api.rules_exist();
   if (hasRules) {
