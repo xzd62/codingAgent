@@ -89,6 +89,32 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
 .mcp-tool-tag{font-size:11px;padding:2px 8px;background:#f0e8d8;border-radius:4px;color:#5a4030}
 .mcp-add-card{border:2px dashed #d0c0a8;border-radius:10px;padding:20px;text-align:center;cursor:pointer;color:#a08c78;background:transparent;transition:all 0.2s}
 .mcp-add-card:hover{border-color:#e8783a;color:#e8783a;background:#faf0e4}
+
+/* 技能页面 */
+.skill-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;padding:4px 0}
+.skill-card{border:1px solid #e8d8c4;border-radius:12px;padding:18px;background:white;cursor:pointer;transition:all 0.2s;display:flex;flex-direction:column;position:relative}
+.skill-card:hover{border-color:#d0b898;box-shadow:0 3px 12px rgba(44,31,20,0.06)}
+.skill-card-name{font-weight:bold;font-size:15px;color:#2c1f14;margin-bottom:3px}
+.skill-card-desc{font-size:12px;color:#a08c78;margin-bottom:10px;min-height:1.2em}
+.skill-card-preview{font-size:12px;color:#7a6050;line-height:1.6;flex:1;overflow:hidden;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical}
+.skill-card-footer{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:10px;border-top:1px solid #f0e8dc}
+.skill-card-status{font-size:11px;color:#a08c78}
+/* Toggle switch */
+.switch{position:relative;display:inline-block;width:36px;height:20px;flex-shrink:0}
+.switch input{opacity:0;width:0;height:0}
+.switch .slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;border-radius:20px;background:#d0c0a8;transition:0.25s}
+.switch .slider::before{content:"";position:absolute;height:16px;width:16px;left:2px;bottom:2px;border-radius:50%;background:white;transition:0.25s}
+.switch input:checked+.slider{background:#e8783a}
+.switch input:checked+.slider::before{transform:translateX(16px)}
+/* 详情弹窗 */
+.modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(44,31,20,0.35);z-index:1000;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal-box{background:white;border-radius:14px;width:640px;max-width:90vw;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.15)}
+.modal-header{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid #e8d8c4}
+.modal-header h3{font-size:16px}
+.modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:#a08c78;padding:0 4px}
+.modal-close:hover{color:#2c1f14}
+.modal-body{padding:18px 22px;overflow-y:auto;flex:1;font-size:13px;line-height:1.7;white-space:pre-wrap;color:#2c1f14}
 </style>
 </head>
 <body>
@@ -108,6 +134,10 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
     <button class="nav-item" onclick="switchPage('mcp',this)">
       <svg class="icon" viewBox="0 0 18 18" fill="none"><rect x="2" y="2" width="6" height="14" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="6" width="6" height="10" rx="1" stroke="currentColor" stroke-width="1.5"/><path d="M5 8v3" stroke="currentColor" stroke-width="1.5"/><path d="M13 10v3" stroke="currentColor" stroke-width="1.5"/></svg>
       MCP
+    </button>
+    <button class="nav-item" onclick="switchPage('skill',this)">
+      <svg class="icon" viewBox="0 0 18 18" fill="none"><path d="M9 1l1.5 4.5L15 7l-4.5 1.5L9 13l-1.5-4.5L3 7l4.5-1.5L9 1z" stroke="currentColor" stroke-width="1.2"/><circle cx="9" cy="9" r="3.5" stroke="currentColor" stroke-width="1.2"/></svg>
+      技能
     </button>
     <button class="nav-item" onclick="switchPage('settings',this)">
       <svg class="icon" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M9 1v2M9 15v2M1 9h2M15 9h2M2.5 2.5l1.5 1.5M14 14l1.5 1.5M2.5 15.5l1.5-1.5M14 4l1.5-1.5" stroke="currentColor" stroke-width="1.5"/></svg>
@@ -155,6 +185,24 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
         <button class="btn btn-primary" onclick="doAddMcp()">添加</button>
         <button class="btn btn-secondary" onclick="cancelAddMcp()">取消</button>
       </div>
+    </div>
+  </div>
+
+  <div class="page" id="pageSkill">
+    <div class="header"><h2>技能</h2></div>
+    <div class="settings-body">
+      <div class="skill-grid" id="skillGrid"></div>
+    </div>
+  </div>
+
+  <!-- 技能详情弹窗 -->
+  <div class="modal-overlay" id="skillModal" onclick="hideSkillDetail(event)">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="skillModalTitle">技能详情</h3>
+        <button class="modal-close" onclick="hideSkillDetail()">&times;</button>
+      </div>
+      <div class="modal-body" id="skillModalBody"></div>
     </div>
   </div>
 
@@ -274,8 +322,16 @@ function switchPage(name, btn) {
   document.querySelectorAll('.page').forEach(e=>e.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('page'+name.charAt(0).toUpperCase()+name.slice(1)).classList.add('active');
+  const pet = document.getElementById('petPanel');
+  if (name === 'chat') {
+    pet.style.display = 'flex';
+    setMood('默认');
+  } else {
+    pet.style.display = 'none';
+  }
   if (name === 'settings') loadSettings();
   if (name === 'mcp') loadMcpStatus();
+  if (name === 'skill') loadSkills();
 }
 
 function appendMsg(role, content) {
@@ -661,6 +717,49 @@ async function doAddMcp() {
   loadMcpStatus();
 }
 
+// ---- 技能 ----
+async function loadSkills() {
+  const data = JSON.parse(await pywebview.api.get_skills());
+  const grid = document.getElementById('skillGrid'); grid.innerHTML = '';
+  for (const s of data) {
+    const statusText = s.enabled ? '已启用' : '已禁用';
+    const checked = s.enabled ? 'checked' : '';
+    grid.innerHTML += '' +
+      '<div class="skill-card" onclick="showSkillDetail(\''+s.name+'\', event)">' +
+        '<div class="skill-card-name">'+esc(s.name)+'</div>' +
+        '<div class="skill-card-desc">'+esc(s.description || '暂无描述')+'</div>' +
+        '<div class="skill-card-footer">' +
+          '<span class="skill-card-status">'+statusText+'</span>' +
+          '<label class="switch" onclick="event.stopPropagation()">' +
+            '<input type="checkbox" '+checked+' onchange="toggleSkill(\''+s.name+'\',this.checked)">' +
+            '<span class="slider"></span>' +
+          '</label>' +
+        '</div>' +
+      '</div>';
+  }
+  if (data.length === 0) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:#a08c78;font-size:14px">暂无技能，将 skill 目录下的 skill.md 放入即可</div>';
+  }
+}
+async function toggleSkill(name, enabled) {
+  await pywebview.api.toggle_skill(name, enabled);
+  document.querySelectorAll('.skill-card').forEach(card => {
+    if (card.querySelector('.skill-card-name')?.textContent === name) {
+      card.querySelector('.skill-card-status').textContent = enabled ? '已启用' : '已禁用';
+    }
+  });
+}
+async function showSkillDetail(name, event) {
+  if (event && (event.target.closest('.switch') || event.target.closest('input'))) return;
+  const detail = await pywebview.api.get_skill_detail(name);
+  document.getElementById('skillModalTitle').textContent = name;
+  document.getElementById('skillModalBody').textContent = detail || '（无详细指引）';
+  document.getElementById('skillModal').classList.add('show');
+}
+function hideSkillDetail(event) {
+  if (event && event.target !== document.getElementById('skillModal')) return;
+  document.getElementById('skillModal').classList.remove('show');
+}
 window.addEventListener('pywebviewready', async () => {
   await loadConvs();
   if (convs.length > 0) await switchConv(convs[0].id);

@@ -263,6 +263,25 @@ class Api:
         import tool.mcp_client
         tool.mcp_client.init()
 
+    def get_skills(self) -> str:
+        from skill.registry import get_registry
+        return json.dumps(get_registry().list_skills(), ensure_ascii=False)
+
+    def toggle_skill(self, name: str, enabled: bool):
+        from skill.registry import get_registry
+        reg = get_registry()
+        if enabled:
+            reg.enable(name)
+        else:
+            reg.disable(name)
+
+    def get_skill_detail(self, name: str) -> str:
+        from skill.registry import get_registry
+        skill = get_registry().get_skill(name)
+        if skill:
+            return skill.prompt
+        return ""
+
 
 def _start_tray():
     tray = TrayApp(
