@@ -14,6 +14,7 @@ import tool.edit_file
 import tool.bash
 import tool.verify
 import tool.web_fetch
+import tool.load_skill
 import tool.mcp_client
 
 from ui.webui import run

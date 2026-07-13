@@ -35,9 +35,12 @@ class Agent:
             full_prompt += f"\n\n## 桌宠灵魂\n{soul}"
 
         from skill.registry import get_registry
-        skills_prompt = get_registry().get_active_prompt()
-        if skills_prompt:
-            full_prompt += f"\n\n{skills_prompt}"
+        reg = get_registry()
+        skill_list = reg.list_skills()
+        if skill_list:
+            lines = [f"- {s['name']}: {s['description']}" for s in skill_list]
+            full_prompt += "\n\n### 可用技能\n" + "\n".join(lines)
+            full_prompt += "\n\n如需使用某个技能，调用 `load_skill(name=\"技能名\")` 加载详细指引。"
 
         if memories:
             full_prompt += f"\n\n## 长期记忆\n{memories}"
