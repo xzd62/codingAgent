@@ -10,7 +10,9 @@ from tool.registry import registry
 
 
 class Agent:
-    """Agent 调度层。 """
+    MODE_PLAN = "plan"
+    MODE_BUILD = "build"
+    _PLAN_BLOCKED = {"bash", "write_file", "edit_file", "verify"}
 
     def __init__(self, llm: LLMClient, stm: SessionContext, ltm: MemoryStore,
                  on_status: callable | None = None):
@@ -18,6 +20,8 @@ class Agent:
         self._stm = stm
         self._ltm = ltm
         self._on_status = on_status or (lambda msg: None)
+        from config.settings import get_agent_mode
+        self._mode = get_agent_mode()
         self._setup_system_prompt()
 
     def _setup_system_prompt(self):
@@ -42,13 +46,30 @@ class Agent:
             full_prompt += "\n\n### 可用技能\n" + "\n".join(lines)
             full_prompt += "\n\n如需使用某个技能，调用 `load_skill(name=\"技能名\")` 加载详细指引。"
 
+        mode_desc = {
+            "plan": "你处于「规划模式」。只给出方案、思路和建议，不要编辑任何文件或执行任何命令。你可以读取文件和搜索代码来了解项目现状。",
+            "build": "你处于「构建模式」。可以自由调用工具来读写文件、执行命令、完成开发任务。",
+        }
+        full_prompt += f"\n\n## 当前模式\n{mode_desc[self._mode]}"
+
         if memories:
             full_prompt += f"\n\n## 长期记忆\n{memories}"
 
         self._stm.add_system(full_prompt)
+
+    def set_mode(self, mode: str):
+        from config.settings import set_agent_mode
+        self._mode = mode
+        set_agent_mode(mode)
+        self._setup_system_prompt()
     def process(self, user_input: str) -> str:
         self._stm.add_message(role="user",content=user_input)
-        tools = registry.get_schemas()
+        all_tools = registry.get_schemas()
+        if self._mode == "plan":
+            tools = [t for t in all_tools
+                     if t["function"]["name"] not in self._PLAN_BLOCKED]
+        else:
+            tools = all_tools
         first = True
 
         while True:

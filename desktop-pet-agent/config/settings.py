@@ -180,6 +180,20 @@ def remove_mcp_server(name: str):
     )
 
 
+# Agent 模式
+_AGENT_MODE = os.getenv("AGENT_MODE", "build")
+
+
+def get_agent_mode() -> str:
+    return _AGENT_MODE
+
+
+def set_agent_mode(mode: str):
+    global _AGENT_MODE
+    _AGENT_MODE = mode
+    _update_env("AGENT_MODE", mode)
+
+
 _ENV_PATH = Path(__file__).resolve().parent.parent / "settings.env"
 
 

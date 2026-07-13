@@ -64,6 +64,14 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
 .input-area textarea:focus{border-color:#e8783a}
 .send-btn{width:44px;height:44px;border:none;border-radius:8px;background:#e8783a;color:white;font-size:18px;cursor:pointer;flex-shrink:0}
 .send-btn:disabled{opacity:0.4;cursor:not-allowed}
+
+/* 模式切换栏 */
+.mode-bar{display:flex;align-items:center;gap:7px;padding:6px 32px 10px;cursor:pointer;font-size:12px;color:#a08c78;user-select:none;border-top:1px solid #e8d8c4;background:#faf6f0;transition:color 0.15s}
+.mode-bar:hover{color:#2c1f14}
+.mode-dot{width:8px;height:8px;border-radius:50%;transition:background 0.2s}
+.mode-bar.plan .mode-dot{background:#a08c78}
+.mode-bar.build .mode-dot{background:#4caf50}
+
 .settings-body{flex:1;overflow-y:auto;padding:24px 32px;min-height:0}
 .settings-tabs{display:flex;gap:0;border-bottom:1px solid #e8d8c4;margin-bottom:20px}
 .settings-tab{padding:8px 20px;cursor:pointer;font-size:13px;color:#a08c78;border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;font-family:inherit}
@@ -165,6 +173,10 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
     <div class="input-area">
       <textarea id="input" rows="2" placeholder="输入消息…" onkeydown="onInputKey(event)"></textarea>
       <button class="send-btn" id="sendBtn" onclick="send()">→</button>
+    </div>
+    <div class="mode-bar" id="modeBar" onclick="toggleMode()" title="点击或按 Tab 切换模式">
+      <span class="mode-dot" id="modeDot"></span>
+      <span id="modeLabel">规划模式</span>
     </div>
   </div>
 
@@ -330,6 +342,23 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
 <script>
 let convs = [], processing = false, statusTimer = null;
 
+// 模式切换
+async function loadMode() {
+  const mode = await pywebview.api.get_mode();
+  applyMode(mode);
+}
+function applyMode(mode) {
+  const bar = document.getElementById('modeBar');
+  bar.className = 'mode-bar ' + mode;
+  document.getElementById('modeLabel').textContent = mode === 'plan' ? '规划模式' : '构建模式';
+}
+async function toggleMode() {
+  const current = await pywebview.api.get_mode();
+  const next = current === 'plan' ? 'build' : 'plan';
+  await pywebview.api.set_mode(next);
+  applyMode(next);
+}
+
 function switchPage(name, btn) {
   document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
   document.querySelectorAll('.page').forEach(e=>e.classList.remove('active'));
@@ -380,7 +409,10 @@ function setBusy(b) {
   document.getElementById('input').disabled = b;
   if (!b) document.getElementById('input').focus();
 }
-function onInputKey(e) { if (e.key==='Enter'&&!e.shiftKey) { e.preventDefault(); send(); } }
+function onInputKey(e) {
+  if (e.key==='Enter'&&!e.shiftKey) { e.preventDefault(); send(); return; }
+  if (e.key==='Tab') { e.preventDefault(); toggleMode(); }
+}
 
 function updatePetAvatar(src) {
   const img = document.getElementById('petAvatarImg');
@@ -445,7 +477,6 @@ function appendStatus(text) {
   d.className = 'msg msg-status';
   d.innerHTML = '<div class="msg-bubble" style="color:#a08c78;font-size:12px;font-style:italic;padding:2px 14px">'+esc(text)+'</div>';
   msgs.appendChild(d); msgs.scrollTop = msgs.scrollHeight;
-  if (text.includes('思考')) setMood('思考');
 }
 
 function animateReply(text) {
@@ -476,6 +507,7 @@ async function pollStatus() {
       appendMsg('assistant', item.slice(9));
     } else {
       appendStatus(item);
+      if (item.includes('思考')) setMood('思考');
     }
   }
 }
@@ -546,10 +578,14 @@ async function switchConv(id) {
     else if (m.role === 'status') {
       if (m.content && m.content.startsWith('__TEXT__:')) {
         appendMsg('assistant', m.content.slice(9));
-      } else {
-        appendStatus(m.content||'');
+      } else if (m.content) {
+        appendStatus(m.content);
       }
     }
+  }
+  // 切回对话页
+  switchPage('chat', document.querySelector('.nav-item'));
+  setMood('默认');
   // 加载规则
   const hasRules = await pywebview.api.rules_exist();
   if (hasRules) {
@@ -560,23 +596,26 @@ async function switchConv(id) {
     document.getElementById('ruleCreate').style.display = 'block';
     document.getElementById('ruleEditor').style.display = 'none';
   }
-  }
 }
 async function newSession() {
   if (processing) return;
   await pywebview.api.new_conv();
   document.getElementById('messages').innerHTML = '';
   document.getElementById('convTitle').textContent = '新对话';
-  loadConvs();
-  switchPage('chat', document.querySelectorAll('.nav-item')[0]);
+  await loadConvs();
+  switchPage('chat', document.querySelector('.nav-item'));
 }
 async function deleteConv(id) {
   if (processing) return;
   if (!confirm('确定删除该对话？')) return;
   await pywebview.api.delete_conv(id);
-  document.getElementById('messages').innerHTML = '';
-  loadConvs();
-  switchPage('chat', document.querySelectorAll('.nav-item')[0]);
+  await loadConvs();
+  if (convs.length > 0) {
+    await switchConv(convs[0].id);
+  } else {
+    document.getElementById('messages').innerHTML = '';
+    switchPage('chat', document.querySelector('.nav-item'));
+  }
 }
 
 // ---- 设置 ----
@@ -840,7 +879,7 @@ window.addEventListener('pywebviewready', async () => {
   document.getElementById('petPanel').style.width = ps + 'px';
   document.getElementById('petSizeInput').value = ps;
   setMood('默认');
-  
+  loadMode();
 });
 </script>
 </body>

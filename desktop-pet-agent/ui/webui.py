@@ -294,6 +294,12 @@ class Api:
         from skill.registry import get_registry
         get_registry().save_skill(name, content)
 
+    def get_mode(self) -> str:
+        return self._agent._mode
+
+    def set_mode(self, mode: str):
+        self._agent.set_mode(mode)
+
 
 def _start_tray():
     tray = TrayApp(
