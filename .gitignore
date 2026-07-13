@@ -21,6 +21,9 @@ __pycache__/
 dist/
 build/
 
+# CodeGraph index
+.codegraph/
+
 # IDE
 .vscode/
 .idea/

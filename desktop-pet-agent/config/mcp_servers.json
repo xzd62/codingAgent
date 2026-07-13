@@ -1,9 +1,9 @@
 {
   "servers": [
     {
-      "name": "example",
-      "command": "python",
-      "args": ["-m", "mcp_example_server"],
+      "name": "codegraph",
+      "command": "codegraph",
+      "args": ["serve", "--mcp", "--path", "D:\\767676"],
       "env": {}
     }
   ]

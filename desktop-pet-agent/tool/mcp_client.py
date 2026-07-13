@@ -1,10 +1,39 @@
 """MCP Client — 连接外部 MCP Server，动态注册工具到 ToolRegistry。"""
 
+import asyncio
+import threading
+import anyio
+from mcp import ClientSession, StdioServerParameters, stdio_client
+
 from tool.registry import registry
+
+# 持久事件循环 + 后台线程（所有 anyio 操作共享同一个循环）
+_loop: asyncio.AbstractEventLoop | None = None
+_loop_lock = threading.Lock()
+
+
+def _run_async(coro):
+    global _loop
+    with _loop_lock:
+        if _loop is None:
+            _loop = asyncio.new_event_loop()
+            t = threading.Thread(target=_loop.run_forever, daemon=True)
+            t.start()
+    future = asyncio.run_coroutine_threadsafe(coro, _loop)
+    return future.result()
+
+
+class _Connection:
+    def __init__(self, streams_cm, session_cm, session):
+        self._streams_cm = streams_cm
+        self._session_cm = session_cm
+        self.session = session
+
+
+_connections: list = []
 
 
 def init():
-    """读取配置，连接所有 MCP Server，注册工具。"""
     from config.settings import get_mcp_servers
 
     servers = get_mcp_servers()
@@ -15,43 +44,42 @@ def init():
         env = cfg.get("env", {})
 
         try:
-            session, tools = _connect_to_server(name, command, args, env)
-            _register_tools(name, session, tools)
+            conn, tools = _connect_to_server(name, command, args, env)
+            _connections.append(conn)
+            _register_tools(name, conn.session, tools)
         except Exception as e:
             print(f"[MCP] 连接 '{name}' 失败: {e}")
 
 
-# ============================================================
-#  ★ 你来实现这部分 ★
-#  用 mcp SDK 建立 stdio 连接，返回 (session, tools)
-# ============================================================
 def _connect_to_server(name: str, command: str, args: list[str],
                        env: dict[str, str]):
-    """连接到 MCP Server，发现工具列表。
+    async def _connect_inner():
+        params = StdioServerParameters(
+            command=command,
+            args=args,
+            env=env or None,
+        )
 
-    你需要用 mcp SDK 完成：
-      1. 创建 StdioServerParameters(command, args, env)
-      2. 用 stdio_client() 拿到 read_stream, write_stream
-      3. 用 ClientSession(read, write) 创建 session
-      4. 调用 await session.initialize()
-      5. 调用 await session.list_tools()
-      6. 返回 (session, tools) — tools 是 list[Tool] 对象
+        streams_cm = stdio_client(params)
+        read, write = await streams_cm.__aenter__()
 
-    MCP SDK 的 Tool 有 .name, .description, .input_schema 三个属性。
-    """
-    # ── 你的代码写在这里 ──
-    raise NotImplementedError("请实现 _connect_to_server()")
+        session_cm = ClientSession(read, write)
+        session = await session_cm.__aenter__()
+
+        await session.initialize()
+
+        result = await session.list_tools()
+
+        return _Connection(streams_cm, session_cm, session), result.tools
+
+    return _run_async(_connect_inner())
 
 
-# ============================================================
-#  以下由我（AI）写完，你不用动
-# ============================================================
 def _mcp_schema_to_our_schema(tool) -> dict:
-    """把 MCP SDK 的 Tool 对象转成我们 registry 的 schema 格式。"""
     return {
         "name": tool.name,
         "description": tool.description,
-        "parameters": tool.input_schema,
+        "parameters": tool.inputSchema,
     }
 
 
@@ -64,9 +92,8 @@ def _register_tools(server_name: str, session, tools):
 
         def make_handler(session=session, tool_name=tool.name):
             def handler(args):
-                import anyio
                 try:
-                    result = anyio.run(session.call_tool, tool_name, args)
+                    result = _run_async(session.call_tool(tool_name, args))
                     if hasattr(result, "content") and result.content:
                         texts = [
                             c.text for c in result.content
@@ -87,5 +114,7 @@ def _register_tools(server_name: str, session, tools):
 
 
 def shutdown():
-    """断开所有 MCP Server 连接（预留）。"""
-    print("[MCP] 清理连接…")
+    for conn in _connections:
+        anyio.run(conn.close)
+    _connections.clear()
+    print("[MCP] 所有连接已关闭")

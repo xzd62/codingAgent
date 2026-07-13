@@ -13,11 +13,13 @@ import tool.grep
 import tool.edit_file
 import tool.bash
 import tool.verify
+import tool.mcp_client
 
 from ui.webui import run
 
 
 def main():
+    tool.mcp_client.init()
     run()
 
 
