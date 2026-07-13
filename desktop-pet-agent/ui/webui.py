@@ -282,6 +282,18 @@ class Api:
             return skill.prompt
         return ""
 
+    def create_skill(self, name: str, description: str):
+        from skill.registry import get_registry
+        get_registry().create_skill(name, description)
+
+    def delete_skill(self, name: str):
+        from skill.registry import get_registry
+        get_registry().delete_skill(name)
+
+    def save_skill(self, name: str, content: str):
+        from skill.registry import get_registry
+        get_registry().save_skill(name, content)
+
 
 def _start_tray():
     tray = TrayApp(

@@ -82,6 +82,26 @@ class SkillRegistry:
     def get_skill(self, name: str) -> SkillInfo | None:
         return self._skills.get(name)
 
+    def delete_skill(self, name: str):
+        skill = self._skills.get(name)
+        if skill and skill.dir.is_dir():
+            import shutil
+            shutil.rmtree(skill.dir)
+        self.scan()
+
+    def create_skill(self, name: str, description: str = ""):
+        dir = self._base_dir / name
+        dir.mkdir(parents=True, exist_ok=True)
+        front = f"---\nname: {name}\ndescription: {description}\n---\n"
+        (dir / "skill.md").write_text(front, encoding="utf-8")
+        self.scan()
+
+    def save_skill(self, name: str, content: str):
+        skill = self._skills.get(name)
+        if skill and skill.dir.is_dir():
+            (skill.dir / "skill.md").write_text(content.strip() + "\n", encoding="utf-8")
+            self.scan()
+
     def reload(self):
         self.scan()
 

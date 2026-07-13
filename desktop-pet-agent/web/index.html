@@ -95,6 +95,12 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
 .skill-card{border:1px solid #e8d8c4;border-radius:12px;padding:18px;background:white;cursor:pointer;transition:all 0.2s;display:flex;flex-direction:column;position:relative}
 .skill-card:hover{border-color:#d0b898;box-shadow:0 3px 12px rgba(44,31,20,0.06)}
 .skill-card-name{font-weight:bold;font-size:15px;color:#2c1f14;margin-bottom:3px}
+.skill-card:hover .skill-card-del{display:block}
+.skill-card-del{display:none;position:absolute;top:6px;right:10px;font-size:18px;color:#c0a898;cursor:pointer;line-height:1;padding:0 4px;border-radius:4px;background:rgba(255,255,255,0.8)}
+.skill-card-del:hover{color:#e8783a;background:#f0e8dc}
+.skill-card-add{border:2px dashed #d0c0a8;cursor:pointer;min-height:140px;justify-content:center}
+.skill-card-add:hover{border-color:#e8783a;background:#faf6f0}
+.skill-card-add:hover span{color:#e8783a}
 .skill-card-desc{font-size:12px;color:#a08c78;margin-bottom:10px;min-height:1.2em}
 .skill-card-preview{font-size:12px;color:#7a6050;line-height:1.6;flex:1;overflow:hidden;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical}
 .skill-card-footer{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:10px;border-top:1px solid #f0e8dc}
@@ -195,14 +201,21 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
     </div>
   </div>
 
-  <!-- 技能详情弹窗 -->
+  <!-- 技能详情弹窗（查看+编辑） -->
   <div class="modal-overlay" id="skillModal" onclick="hideSkillDetail(event)">
     <div class="modal-box">
       <div class="modal-header">
         <h3 id="skillModalTitle">技能详情</h3>
-        <button class="modal-close" onclick="hideSkillDetail()">&times;</button>
+        <div>
+          <button class="btn btn-secondary" id="skillEditBtn" onclick="toggleSkillEdit()" style="margin-right:8px;font-size:12px">编辑</button>
+          <button class="modal-close" onclick="hideSkillDetail()">&times;</button>
+        </div>
       </div>
-      <div class="modal-body" id="skillModalBody"></div>
+      <div class="modal-body" id="skillModalBody" style="white-space:pre-wrap"></div>
+      <textarea id="skillModalEditor" style="display:none;width:100%;flex:1;padding:18px 22px;border:none;font-size:13px;font-family:monospace;line-height:1.7;resize:none;outline:none;background:#faf6f0"></textarea>
+      <div id="skillModalSaveRow" style="display:none;padding:12px 22px;border-top:1px solid #e8d8c4;text-align:right">
+        <button class="btn btn-primary" onclick="saveSkillEdit()">保存</button>
+      </div>
     </div>
   </div>
 
@@ -725,7 +738,8 @@ async function loadSkills() {
     const statusText = s.enabled ? '已启用' : '已禁用';
     const checked = s.enabled ? 'checked' : '';
     grid.innerHTML += '' +
-      '<div class="skill-card" onclick="showSkillDetail(\''+s.name+'\', event)">' +
+      '<div class="skill-card" onclick="showSkillDetail(\''+s.name+'\', event)" style="position:relative">' +
+        '<span class="skill-card-del" onclick="event.stopPropagation();deleteSkill(\''+s.name+'\')">&times;</span>' +
         '<div class="skill-card-name">'+esc(s.name)+'</div>' +
         '<div class="skill-card-desc">'+esc(s.description || '暂无描述')+'</div>' +
         '<div class="skill-card-footer">' +
@@ -737,10 +751,15 @@ async function loadSkills() {
         '</div>' +
       '</div>';
   }
-  if (data.length === 0) {
-    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:#a08c78;font-size:14px">暂无技能，将 skill 目录下的 skill.md 放入即可</div>';
-  }
+  grid.innerHTML += '' +
+    '<div class="skill-card skill-card-add" onclick="showCreateSkill()">' +
+      '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:6px;color:#c0b0a0">' +
+        '<span style="font-size:28px;line-height:1">+</span>' +
+        '<span style="font-size:13px">新建技能</span>' +
+      '</div>' +
+    '</div>';
 }
+let _skillModalName = '';
 async function toggleSkill(name, enabled) {
   await pywebview.api.toggle_skill(name, enabled);
   document.querySelectorAll('.skill-card').forEach(card => {
@@ -750,15 +769,60 @@ async function toggleSkill(name, enabled) {
   });
 }
 async function showSkillDetail(name, event) {
-  if (event && (event.target.closest('.switch') || event.target.closest('input'))) return;
+  if (event && (event.target.closest('.switch') || event.target.closest('input') || event.target.closest('.skill-card-del') || event.target.closest('.skill-card-add'))) return;
+  _skillModalName = name;
+  document.getElementById('skillEditBtn').textContent = '编辑';
+  document.getElementById('skillModalBody').style.display = 'block';
+  document.getElementById('skillModalEditor').style.display = 'none';
+  document.getElementById('skillModalSaveRow').style.display = 'none';
   const detail = await pywebview.api.get_skill_detail(name);
   document.getElementById('skillModalTitle').textContent = name;
   document.getElementById('skillModalBody').textContent = detail || '（无详细指引）';
+  document.getElementById('skillModalEditor').value = detail || '';
   document.getElementById('skillModal').classList.add('show');
 }
 function hideSkillDetail(event) {
   if (event && event.target !== document.getElementById('skillModal')) return;
   document.getElementById('skillModal').classList.remove('show');
+}
+function toggleSkillEdit() {
+  const body = document.getElementById('skillModalBody');
+  const editor = document.getElementById('skillModalEditor');
+  const saveRow = document.getElementById('skillModalSaveRow');
+  const btn = document.getElementById('skillEditBtn');
+  if (body.style.display === 'none') {
+    body.style.display = 'block';
+    editor.style.display = 'none';
+    saveRow.style.display = 'none';
+    btn.textContent = '编辑';
+  } else {
+    body.style.display = 'none';
+    editor.style.display = 'block';
+    saveRow.style.display = 'block';
+    btn.textContent = '取消';
+  }
+}
+async function saveSkillEdit() {
+  const content = document.getElementById('skillModalEditor').value;
+  await pywebview.api.save_skill(_skillModalName, content);
+  document.getElementById('skillModalBody').textContent = content;
+  toggleSkillEdit();
+  loadSkills();
+}
+async function deleteSkill(name) {
+  if (!confirm('确定删除技能 "'+name+'" ？')) return;
+  await pywebview.api.delete_skill(name);
+  loadSkills();
+}
+function showCreateSkill() {
+  const name = prompt('技能名称：');
+  if (!name || !name.trim()) return;
+  const desc = prompt('简短描述（可选）：');
+  doCreateSkill(name.trim(), (desc || '').trim());
+}
+async function doCreateSkill(name, desc) {
+  await pywebview.api.create_skill(name, desc);
+  loadSkills();
 }
 window.addEventListener('pywebviewready', async () => {
   await loadConvs();
