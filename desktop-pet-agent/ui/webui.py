@@ -196,7 +196,7 @@ class Api:
 
     def create_rules(self):
         """创建默认规则文件。"""
-        default = "# CodePet 用户规则\n\n在此编写你的自定义规则。\n"
+        default = ""
         set_rules(default)
 
     def get_avatar(self) -> str:
