@@ -122,6 +122,8 @@ class Agent:
                         gp = args.get('pattern', '')
                         gpath = args.get('path', '')
                         label += f" {gp} in {gpath}" if gpath else f" {gp}"
+                    elif name == "web_fetch":
+                        label += f" {args.get('url', '')}"
                     self._on_status(label)
                     self._stm.add_message("status", label)
 
@@ -184,6 +186,8 @@ class Agent:
                         label += f" {args.get('path', '')}"
                     elif tname == "glob":
                         label += f" {args.get('pattern', '')}"
+                    elif tname == "web_fetch":
+                        label += f" {args.get('url', '')}"
                     self._on_status(label)
                     self._stm.add_message("status", label)
                     if tname == "bash":
