@@ -119,7 +119,6 @@ class Agent:
                                       tool_calls=reply["tool_calls"])
                 if content_str:
                     self._on_status(f"__TEXT__:{content_str}")
-                    self._stm.add_message("assistant", content_str)
                 for tc in reply["tool_calls"]:
                     name = tc["function"]["name"]
                     args = json.loads(tc["function"]["arguments"])
@@ -181,10 +180,12 @@ class Agent:
                     if name == "ask_user" and obs.get("success"):
                         answer = obs.get("answer", "")
                         self._on_status(f"__USER_ANSWER__:{answer}")
-                        self._stm.add_message("user", answer)
 
                     self._stm.add_message("tool", json.dumps(obs, ensure_ascii=False),
                                           tool_call_id=tc["id"])
+
+                    if name == "ask_user" and obs.get("success"):
+                        self._stm.add_message("user", answer)
 
                     if name in ("create_task_list", "check_step"):
                         from agent import plan as plan_mod
