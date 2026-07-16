@@ -119,7 +119,6 @@ class Agent:
                                       tool_calls=reply["tool_calls"])
                 if content_str:
                     self._on_status(f"__TEXT__:{content_str}")
-                    self._stm.add_message("status", f"__TEXT__:{content_str}")
                 for tc in reply["tool_calls"]:
                     name = tc["function"]["name"]
                     args = json.loads(tc["function"]["arguments"])

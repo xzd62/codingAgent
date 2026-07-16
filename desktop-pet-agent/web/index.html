@@ -653,7 +653,7 @@ async function switchConv(id) {
   for (const m of JSON.parse(msgs)) {
     if (m.role === 'system' || m.role === 'tool') continue;
     if (m.role === 'user') { appendMsg('user', m.content||''); }
-    else if (m.role === 'assistant' && !m.tool_calls) { appendMsg('assistant', m.content||''); }
+    else if (m.role === 'assistant') { appendMsg('assistant', m.content||''); }
     else if (m.role === 'status') {
       if (m.content && m.content.startsWith('__TEXT__:')) {
         appendMsg('assistant', m.content.slice(9));
