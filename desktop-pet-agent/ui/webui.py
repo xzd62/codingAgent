@@ -11,7 +11,7 @@ from llm.client import LLMClient
 from ltm.store import MemoryStore
 from stm.context import SessionContext
 from stm.manager import SessionManager
-from ui.tray import TrayApp
+
 import tool.read_file
 import tool.write_file
 import tool.glob
@@ -316,19 +316,6 @@ class Api:
         return self._session_mgr.get_tokens(conv_id)
 
 
-def _start_tray():
-    tray = TrayApp(
-        on_open=lambda: None,
-        on_exit=lambda: _quit(),
-    )
-    tray.run()
-
-
-def _quit():
-    import os
-    os._exit(0)
-
-
 def run():
     srcdir = Path(__file__).resolve().parent.parent / "web"
     set_work_dir(srcdir.parent)
@@ -340,6 +327,7 @@ def run():
         height=800,
         resizable=True,
         js_api=Api(),
+        tray=True,
     )
     webview.start(debug=False)
 
