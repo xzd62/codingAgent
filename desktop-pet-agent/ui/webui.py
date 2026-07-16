@@ -325,6 +325,14 @@ class Api:
         from agent import question
         question.answer(text)
 
+    def cancel_bash(self):
+        from tool import bash
+        bash.cancel_current()
+
+    def is_bash_running(self) -> bool:
+        from tool import bash
+        return bash.is_running()
+
 
 def _start_tray(window):
     def on_open():

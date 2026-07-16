@@ -99,8 +99,7 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
 .mcp-add-card:hover{border-color:#e8783a;color:#e8783a;background:#faf0e4}
 
 /* Token 栏 */
-#pageChat{position:relative}
-.token-bar{position:absolute;bottom:10px;right:32px;font-size:11px;color:#a08c78;background:#faf6f0;padding:3px 10px;border-radius:6px;border:1px solid #e8d8c4;line-height:1.5}
+.token-bar{font-size:11px;color:#a08c78;background:#faf6f0;padding:3px 10px;border-radius:6px;border:1px solid #e8d8c4;line-height:1.5}
 
 /* 技能页面 */
 .skill-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;padding:4px 0}
@@ -185,7 +184,10 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
         <button class="btn btn-primary" onclick="submitAnswer()" style="font-size:13px">提交</button>
       </div>
     </div>
-    <div class="token-bar" id="tokenBar">--</div>
+    <div style="display:flex;align-items:center;gap:8px;padding:0 32px 2px;font-size:12px">
+      <span class="token-bar" id="tokenBar" style="position:static">--</span>
+      <button id="bashCancelBtn" style="display:none;padding:2px 10px;border:1px solid #e8783a;border-radius:6px;background:white;color:#e8783a;font-size:12px;cursor:pointer;font-family:inherit" onclick="pywebview.api.cancel_bash()">⏹ 取消命令</button>
+    </div>
     <div class="mode-bar" id="modeBar" onclick="toggleMode()" title="点击或按 Tab 切换模式">
       <span class="mode-dot" id="modeDot"></span>
       <span id="modeLabel">规划模式</span>
@@ -421,7 +423,11 @@ function setBusy(b) {
   btn.disabled = false;
   btn.textContent = b ? '⏹' : '→';
   document.getElementById('input').disabled = b;
-  if (!b) { document.getElementById('input').focus(); }
+  if (!b) {
+    document.getElementById('input').focus();
+    clearInterval(_bashCheckTimer);
+    document.getElementById('bashCancelBtn').style.display = 'none';
+  }
 }
 function onSendClick() {
   if (processing) { pywebview.api.interrupt(); return; }
@@ -521,6 +527,12 @@ function stopTyping() {
   if (_typingTimer) { clearTimeout(_typingTimer); _typingTimer = null; }
   setBusy(false);
 }
+let _bashCheckTimer = null;
+async function pollBash() {
+  const running = await pywebview.api.is_bash_running();
+  const btn = document.getElementById('bashCancelBtn');
+  if (running) { btn.style.display = ''; } else { btn.style.display = 'none'; }
+}
 function showQuestionInput(q) {
   const bar = document.getElementById('questionBar');
   bar.style.display = 'block';
@@ -587,6 +599,7 @@ async function pollReply() {
   if (reply === '__INTERRUPTED__') {
     stopTyping();
     clearInterval(statusTimer);
+    clearInterval(_bashCheckTimer);
     appendStatus('已中断');
     return;
   }
@@ -608,6 +621,7 @@ async function send() {
     pollStatus();
     pollReply();
   }, 150);
+  _bashCheckTimer = setInterval(pollBash, 500);
 }
 
 // ---- 会话侧栏 ----
