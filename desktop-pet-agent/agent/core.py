@@ -58,8 +58,6 @@ class Agent:
         # 替换 {workdir}
         full_prompt = full_prompt.replace("{workdir}", str(get_work_dir()))
 
-        full_prompt += "\n\n对于需要多步骤的复杂任务，先调用 `create_task_list` 拆解为步骤清单，然后逐步执行。每完成一步调用 `check_step` 标记。"
-
         # 追加可选区块
         rules = get_rules()
         if rules:

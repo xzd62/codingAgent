@@ -338,15 +338,18 @@ def run():
     srcdir = Path(__file__).resolve().parent.parent / "web"
     set_work_dir(srcdir.parent)
 
+    api = Api()
     window = webview.create_window(
         "CodePet",
         str(srcdir / "index.html"),
         width=1280,
         height=800,
         resizable=True,
-        js_api=Api(),
+        js_api=api,
         confirm_close=True,
     )
+
+    window.events.closing += api._save_conv
 
     threading.Thread(target=_start_tray, args=(window,), daemon=True).start()
     webview.start(debug=False)
