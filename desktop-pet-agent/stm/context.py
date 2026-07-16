@@ -24,7 +24,10 @@ class SessionContext:
         self._trim()
 
     def add_system(self, content: str):
-        self._messages.insert(0, {"role": "system", "content": content})
+        if self._messages and self._messages[0].get("role") == "system":
+            self._messages[0]["content"] = content
+        else:
+            self._messages.insert(0, {"role": "system", "content": content})
         self._trim()
 
     def get_messages(self, include_status: bool = False) -> list[dict]:
