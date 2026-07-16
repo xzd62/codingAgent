@@ -186,6 +186,7 @@ class Api:
 
     def save_soul(self, text: str):
         set_soul(text)
+        self._agent._setup_system_prompt()
 
     def get_rules(self) -> str:
         return get_rules()
@@ -287,6 +288,7 @@ class Api:
             reg.enable(name)
         else:
             reg.disable(name)
+        self._agent._setup_system_prompt()
 
     def get_skill_detail(self, name: str) -> str:
         from skill.registry import get_registry
@@ -298,14 +300,17 @@ class Api:
     def create_skill(self, name: str, description: str):
         from skill.registry import get_registry
         get_registry().create_skill(name, description)
+        self._agent._setup_system_prompt()
 
     def delete_skill(self, name: str):
         from skill.registry import get_registry
         get_registry().delete_skill(name)
+        self._agent._setup_system_prompt()
 
     def save_skill(self, name: str, content: str):
         from skill.registry import get_registry
         get_registry().save_skill(name, content)
+        self._agent._setup_system_prompt()
 
     def get_mode(self) -> str:
         return self._agent._mode
