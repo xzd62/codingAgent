@@ -30,7 +30,7 @@ class SessionContext:
     def get_messages(self, include_status: bool = False) -> list[dict]:
         if include_status:
             return list(self._messages)
-        return [m for m in self._messages if m.get("role") != "status"]
+        return [m for m in self._messages if m.get("role") not in ("status", "plan")]
 
     def pop_message(self, index: int = -1) -> dict | None:
         if self._messages:
