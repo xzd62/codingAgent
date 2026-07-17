@@ -195,11 +195,15 @@ def set_agent_mode(mode: str):
 
 
 # 活跃角色包
-_ACTIVE_CHARACTER = os.getenv("ACTIVE_CHARACTER", "default")
+_ACTIVE_CHARACTER = os.getenv("ACTIVE_CHARACTER", "")
 
 
 def get_active_character() -> str:
-    return _ACTIVE_CHARACTER
+    if _ACTIVE_CHARACTER:
+        return _ACTIVE_CHARACTER
+    from character import registry as cr
+    chars = cr.list_characters()
+    return chars[0]["name"] if chars else ""
 
 
 def set_active_character(name: str):

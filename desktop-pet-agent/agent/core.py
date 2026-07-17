@@ -67,9 +67,10 @@ class Agent:
         from config.settings import get_active_character
         from character import registry as char_reg
         active_char = get_active_character()
-        soul = char_reg.get_soul(active_char)
-        if soul:
-            full_prompt += f"\n\n## 桌宠灵魂\n{soul}"
+        if active_char:
+            soul = char_reg.get_soul(active_char)
+            if soul:
+                full_prompt += f"\n\n## 桌宠灵魂\n{soul}"
 
         memories = self._ltm.load()
         if memories:

@@ -9,28 +9,7 @@ _SOUL_FILE = "soul.md"
 MOODS = ["默认", "高兴", "伤心", "生气", "思考"]
 
 
-def _ensure_default():
-    """首次运行：迁移旧文件到 default 角色包。"""
-    default_dir = _BASE_DIR / "default"
-    if default_dir.is_dir():
-        return
-    default_dir.mkdir(exist_ok=True)
-    # 迁移 config/soul.md
-    old_soul = _BASE_DIR.parent / "config" / "soul.md"
-    if old_soul.exists():
-        old_soul.rename(default_dir / _SOUL_FILE)
-    else:
-        (default_dir / _SOUL_FILE).write_text("", encoding="utf-8")
-    # 迁移旧立绘文件
-    for mood in MOODS:
-        for ext in ("png", "jpg", "jpeg", "gif"):
-            src = _BASE_DIR / f"{mood}.{ext}"
-            if src.exists():
-                src.rename(default_dir / src.name)
-
-
 def list_characters() -> list[dict]:
-    _ensure_default()
     result = []
     for entry in sorted(_BASE_DIR.iterdir()):
         if not entry.is_dir() or entry.name.startswith("__"):
