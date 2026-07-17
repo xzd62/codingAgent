@@ -36,6 +36,10 @@ def grep_handler(args):
         if not search_path.is_absolute():
             search_path = work_dir / search_path
         search_path = search_path.resolve()
+        from config.permission import check as perm_check
+        allowed, reason = perm_check("grep", str(search_path))
+        if not allowed:
+            return {"success": False, "error": reason}
     else:
         search_path = work_dir
 
@@ -60,9 +64,13 @@ def grep_handler(args):
             text = fp.read_text(encoding="utf-8", errors="replace")
         except Exception:
             continue
+        base = work_dir if work_dir.is_dir() else work_dir.parent
         for lineno, line in enumerate(text.splitlines(), 1):
             if compiled.search(line):
-                rel = fp.relative_to(work_dir) if fp != work_dir else fp.name
+                try:
+                    rel = fp.relative_to(base)
+                except ValueError:
+                    rel = fp.name
                 results.append(f"{rel}:{lineno}: {line.strip()[:120]}")
 
     return {"success": True, "matches": results, "count": len(results)}

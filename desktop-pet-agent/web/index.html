@@ -270,6 +270,24 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
     </div>
   </div>
 
+  <!-- 权限请求弹窗 -->
+  <div class="modal-overlay" id="permModal">
+    <div class="modal-box" style="width:480px">
+      <div class="modal-header">
+        <h3>🔒 权限请求</h3>
+      </div>
+      <div class="modal-body" id="permModalBody" style="white-space:normal;font-size:14px;line-height:1.8">
+        <p style="color:#a08c78;margin-bottom:6px">Agent 需要访问工作目录外的文件：</p>
+        <code id="permModalPath" style="display:block;padding:10px 12px;background:#f5ede0;border-radius:6px;font-size:13px;word-break:break-all"></code>
+      </div>
+      <div style="padding:14px 22px;border-top:1px solid #e8d8c4;display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-secondary" id="permBtnOnce" onclick="answerPerm('once')">允许一次</button>
+        <button class="btn btn-primary" id="permBtnAlways" onclick="answerPerm('always')">永久允许</button>
+        <button class="btn btn-secondary" id="permBtnDeny" onclick="answerPerm('deny')" style="color:#a08c78">拒绝</button>
+      </div>
+    </div>
+  </div>
+
   <div class="page" id="pageSettings">
     <div class="header"><h2>设置</h2></div>
     <div class="settings-body">
@@ -278,6 +296,7 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
         <button class="settings-tab" onclick="switchSettingTab(this,'stAvatar')">立绘</button>
         <button class="settings-tab" onclick="switchSettingTab(this,'stTts')">语音</button>
         <button class="settings-tab" onclick="switchSettingTab(this,'stRule')">规则</button>
+        <button class="settings-tab" onclick="switchSettingTab(this,'stPermission')">权限</button>
       </div>
       <div class="settings-content active" id="stModel">
         <p style="font-size:12px;color:#a08c78;margin-bottom:12px">选择 AI 模型和配置 API 密钥。</p>
@@ -309,6 +328,11 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
           <textarea id="rulesInput"></textarea>
           <div style="margin-top:12px;text-align:right"><button class="btn btn-primary" onclick="saveRules()">保存规则</button></div>
         </div>
+      </div>
+      <div class="settings-content" id="stPermission">
+        <p style="font-size:12px;color:#a08c78;margin-bottom:12px">已授权的工作目录外路径，所有工具均可访问。</p>
+        <div id="permList"></div>
+        <p style="font-size:11px;color:#c0a898;margin-top:12px">当工具需要访问新路径时会自动弹窗询问。</p>
       </div>
     </div>
   </div>
@@ -590,6 +614,8 @@ async function pollStatus() {
     } else if (item.startsWith('__TOKEN__:')) {
       const tu = JSON.parse(item.slice(10));
       updateTokenBar(tu.prompt + tu.completion);
+    } else if (item.startsWith('__PERMISSION_REQUIRED__:')) {
+      showPermModal(item.slice(24));
     } else if (item.startsWith('__TEXT__:')) {
       animateTextReply(item.slice(9));
     } else {
@@ -724,6 +750,7 @@ async function loadSettings() {
   loadChars();
   document.getElementById('modelSelect').value = await pywebview.api.get_model();
   document.getElementById('apiKeyInput').value = await pywebview.api.get_apikey();
+  loadPermissions();
 }
 function switchSettingTab(btn, id) {
   document.querySelectorAll('.settings-tab').forEach(e=>e.classList.remove('active'));
@@ -1048,6 +1075,48 @@ function previewMood(url) {
   img.style.cssText = 'max-width:90vw;max-height:90vh;border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,0.3)';
   overlay.appendChild(img);
   document.body.appendChild(overlay);
+}
+
+// ---- 权限 ----
+let _pendingPermPath = '';
+function showPermModal(path) {
+  _pendingPermPath = path;
+  document.getElementById('permModalPath').textContent = path;
+  document.getElementById('permModal').classList.add('show');
+}
+async function answerPerm(action) {
+  document.getElementById('permModal').classList.remove('show');
+  await pywebview.api.answer_permission(_pendingPermPath, action);
+  _pendingPermPath = '';
+  loadPermissions();
+}
+async function loadPermissions() {
+  const data = JSON.parse(await pywebview.api.get_permissions());
+  const el = document.getElementById('permList');
+  if (!data.length) {
+    el.innerHTML = '<p style="color:#c0a898;font-size:13px;text-align:center;padding:40px 0">暂无永久授权</p>';
+    return;
+  }
+  el.innerHTML = data.map(p => {
+    const display = esc(p.path);
+    const jsPath = p.path.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    return '<div class="mcp-card">' +
+      '<div style="font-size:14px;word-break:break-all;margin-bottom:8px">' + display + '</div>' +
+      '<div style="display:flex;gap:6px">' +
+        '<button class="btn btn-secondary" onclick="openPermLocation(\'' + jsPath + '\')" style="font-size:12px">打开位置</button>' +
+        '<button class="btn btn-secondary" onclick="revokePerm(\'' + jsPath + '\')" style="font-size:12px;color:#e8783a">✕ 移除</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+function openPermLocation(path) {
+  const p = path.replace(/\//g, '\\');
+  pywebview.api.open_folder(p);
+}
+async function revokePerm(path) {
+  if (!confirm('移除对 "' + path + '" 的授权？')) return;
+  await pywebview.api.revoke_permission(path);
+  loadPermissions();
 }
 
 window.addEventListener('pywebviewready', async () => {

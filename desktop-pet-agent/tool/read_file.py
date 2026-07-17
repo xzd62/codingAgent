@@ -30,10 +30,10 @@ def read_file_handler(args):
 
     resolved = path.resolve()
 
-    # 安全校验：禁止读取工作目录之外的文件
-    work_dir = get_work_dir().resolve()
-    if work_dir not in resolved.parents and resolved != work_dir:
-        return {"success": False, "error": "不允许读取工作目录之外的文件"}
+    from config.permission import check as perm_check
+    allowed, reason = perm_check("read_file", str(resolved))
+    if not allowed:
+        return {"success": False, "error": reason}
 
     # 检查是否是目录
     if resolved.is_dir():

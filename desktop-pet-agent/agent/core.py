@@ -4,6 +4,7 @@ import json
 import time
 
 from tool import cancel
+from agent import question
 
 
 from llm.client import LLMClient
@@ -163,6 +164,27 @@ class Agent:
                     except Exception as e:
                         obs = {"success": False, "error": f"工具执行异常: {e}"}
                     _elapsed = time.time() - _t0
+
+                    # 权限错误 → 弹授权框
+                    perm_path = None
+                    if not obs.get("success") and isinstance(obs.get("error"), str) and obs["error"].startswith("__PERMISSION_REQUIRED__:"):
+                        perm_path = obs["error"][len("__PERMISSION_REQUIRED__:"):]
+                        text = f"需要访问工作目录外的文件：\n{perm_path}\n\n允许吗？"
+                        self._on_status(f"__PERMISSION_REQUIRED__:{perm_path}")
+                        ans = question.ask(text)
+                        if ans == "always":
+                            from config.permission import grant
+                            from pathlib import Path
+                            pp = Path(perm_path)
+                            grant(str(pp.parent) if pp.is_file() else str(pp))
+                            obs = registry.dispatch(name, args)
+                            _elapsed = time.time() - _t0
+                        elif ans == "once":
+                            from config.permission import skip_once
+                            skip_once(perm_path)
+                            obs = registry.dispatch(name, args)
+                            _elapsed = time.time() - _t0
+
                     self._on_status(f"完成 ({_elapsed:.1f}s)")
 
                     if not obs.get("success", True):

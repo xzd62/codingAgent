@@ -44,8 +44,8 @@ class Api:
 
     def get_status_updates(self) -> str:
         items = list(self._status_queue)
-        self._status_queue[:] = [x for x in items if x.startswith("__") and not x.startswith("__TEXT__:") and not x.startswith("__TOKEN__:") and not x.startswith("__PLAN__:") and not x.startswith("__ASK_USER__:") and not x.startswith("__USER_ANSWER__:")]
-        plain = [x for x in items if not x.startswith("__") or x.startswith("__TEXT__:") or x.startswith("__TOKEN__:") or x.startswith("__PLAN__:") or x.startswith("__ASK_USER__:") or x.startswith("__USER_ANSWER__:")]
+        self._status_queue[:] = [x for x in items if x.startswith("__") and not x.startswith("__TEXT__:") and not x.startswith("__TOKEN__:") and not x.startswith("__PLAN__:") and not x.startswith("__ASK_USER__:") and not x.startswith("__USER_ANSWER__:") and not x.startswith("__PERMISSION_REQUIRED__:")]
+        plain = [x for x in items if not x.startswith("__") or x.startswith("__TEXT__:") or x.startswith("__TOKEN__:") or x.startswith("__PLAN__:") or x.startswith("__ASK_USER__:") or x.startswith("__USER_ANSWER__:") or x.startswith("__PERMISSION_REQUIRED__:")]
         return json.dumps(plain, ensure_ascii=False)
 
     def check_reply(self) -> str:
@@ -280,6 +280,26 @@ class Api:
     def answer_question(self, text: str):
         from agent import question
         question.answer(text)
+
+    def answer_permission(self, path: str, action: str):
+        from agent import question
+        question.answer(action)
+
+    def get_permissions(self) -> str:
+        from config.permission import list_all
+        return json.dumps(list_all(), ensure_ascii=False)
+
+    def revoke_permission(self, path: str):
+        from config.permission import revoke
+        revoke(path)
+
+    def open_folder(self, path: str):
+        import subprocess, os
+        full = os.path.normpath(path)
+        if os.path.isdir(full):
+            subprocess.Popen(["explorer", full])
+        else:
+            subprocess.Popen(["explorer", "/select,", full])
 
     def get_characters(self) -> str:
         from character import registry as cr

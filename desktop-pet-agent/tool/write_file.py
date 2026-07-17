@@ -34,9 +34,10 @@ def write_file_handler(args):
 
     resolved = path.resolve()
 
-    work_dir = get_work_dir().resolve()
-    if work_dir not in resolved.parents and resolved != work_dir:
-        return {"success": False, "error": "不允许写入工作目录之外的文件"}
+    from config.permission import check as perm_check
+    allowed, reason = perm_check("write_file", str(resolved))
+    if not allowed:
+        return {"success": False, "error": reason}
 
     resolved.parent.mkdir(parents=True, exist_ok=True)
     resolved.write_text(content, encoding="utf-8")
