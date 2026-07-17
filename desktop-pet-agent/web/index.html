@@ -987,7 +987,7 @@ async function showCharDetail(name) {
   const grid = document.getElementById('charMoodGrid'); grid.innerHTML = '';
   for (const m of moods) {
     const hasImg = !!m.dataUrl;
-    const img = hasImg ? '<img src="'+m.dataUrl+'" style="cursor:pointer" onclick="previewMood(\''+m.dataUrl+'\')">' : '<div style="width:80px;height:80px;display:flex;align-items:center;justify-content:center;color:#c0b0a0;font-size:20px;margin:0 auto">?</div>';
+    const img = hasImg ? '<img src="'+m.dataUrl+'" style="cursor:pointer" onclick="previewMood(\''+m.dataUrl+'\')">' : '';
     const btnText = hasImg ? '替换' : '上传';
     grid.innerHTML += '' +
       '<div class="char-mood-box" style="position:relative">' +
@@ -1027,6 +1027,9 @@ async function setActiveChar(name) {
   document.getElementById('charModal').classList.remove('show');
   loadChars();
   setMood('默认');
+  if (document.getElementById('pageChat').classList.contains('active')) {
+    setMood('默认');
+  }
 }
 document.getElementById('charSetActiveBtn').onclick = function() {
   setActiveChar(_charModalName);
