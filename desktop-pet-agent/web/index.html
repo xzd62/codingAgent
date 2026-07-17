@@ -278,7 +278,6 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
       <div class="settings-tabs">
         <button class="settings-tab active" onclick="switchSettingTab(this,'stModel')">模型</button>
         <button class="settings-tab" onclick="switchSettingTab(this,'stAvatar')">立绘</button>
-        <button class="settings-tab" onclick="switchSettingTab(this,'stSoul')">灵魂</button>
         <button class="settings-tab" onclick="switchSettingTab(this,'stTts')">语音</button>
         <button class="settings-tab" onclick="switchSettingTab(this,'stRule')">规则</button>
       </div>
@@ -296,11 +295,6 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
           <input type="password" id="apiKeyInput" style="width:100%;padding:10px;border:1px solid #e8d8c4;border-radius:8px;font-size:13px;font-family:inherit;outline:none;background:white">
         </div>
         <div style="text-align:right"><button class="btn btn-primary" onclick="saveModel()">保存模型设定</button></div>
-      </div>
-      <div class="settings-content" id="stSoul">
-        <p style="font-size:12px;color:#a08c78;margin-bottom:8px">当前角色包 <span id="soulCharName" style="font-weight:bold"></span> 的灵魂设定。修改后立即生效。</p>
-        <textarea id="soulInput"></textarea>
-        <div style="margin-top:12px;text-align:right"><button class="btn btn-primary" onclick="saveCharSoulFromSettings()">保存灵魂设定</button></div>
       </div>
       <div class="settings-content" id="stAvatar">
         <div id="charGrid" class="skill-grid" style="margin-bottom:12px"></div>
@@ -472,9 +466,11 @@ function setMood(name) {
   pywebview.api.get_mood_image(name).then(dataUrl => {
     if (dataUrl) {
       document.getElementById('petAvatarSvg').style.display = 'none';
-      const img = document.getElementById('petAvatarImg');
-      img.src = dataUrl;
-      img.style.display = 'block';
+      document.getElementById('petAvatarImg').src = dataUrl;
+      document.getElementById('petAvatarImg').style.display = 'block';
+    } else {
+      document.getElementById('petAvatarImg').style.display = 'none';
+      document.getElementById('petAvatarSvg').style.display = 'block';
     }
   });
 }
@@ -703,9 +699,6 @@ async function deleteConv(id) {
 // ---- 设置 ----
 async function loadSettings() {
   loadChars();
-  const active = await pywebview.api.get_active_character();
-  document.getElementById('soulCharName').textContent = active;
-  document.getElementById('soulInput').value = await pywebview.api.get_character_soul(active);
   document.getElementById('modelSelect').value = await pywebview.api.get_model();
   document.getElementById('apiKeyInput').value = await pywebview.api.get_apikey();
   // 加载头像
@@ -724,15 +717,7 @@ function switchSettingTab(btn, id) {
   btn.classList.add('active');
   document.getElementById(id).classList.add('active');
 }
-async function saveSoul() {
-  const text = document.getElementById('soulInput').value.trim();
-  const active = await pywebview.api.get_active_character();
-  await pywebview.api.save_character_soul(active, text);
-  alert('灵魂设定已保存。');
-}
-async function saveCharSoulFromSettings() {
-  await saveSoul();
-}
+
 async function createRules() {
   await pywebview.api.create_rules();
   document.getElementById('ruleCreate').style.display = 'none';
@@ -1087,6 +1072,7 @@ async function renameCharMood(name, oldMood) {
   if (!newMood || !newMood.trim() || newMood.trim() === oldMood) return;
   await pywebview.api.rename_character_mood(name, oldMood, newMood.trim());
   showCharDetail(name);
+  loadChars();
 }
 function previewMood(url) {
   if (!url) return;
