@@ -984,19 +984,18 @@ async function showCharDetail(name) {
   document.getElementById('charSetActiveBtn').style.display = 'inline-block';
   document.getElementById('charModal').classList.add('show');
   const moods = JSON.parse(await pywebview.api.get_character_moods(name));
-  const defaultMoods = ['默认','高兴','伤心','生气','思考'];
   const grid = document.getElementById('charMoodGrid'); grid.innerHTML = '';
   for (const m of moods) {
     const hasImg = !!m.dataUrl;
     const img = hasImg ? '<img src="'+m.dataUrl+'" style="cursor:pointer" onclick="previewMood(\''+m.dataUrl+'\')">' : '<div style="width:80px;height:80px;display:flex;align-items:center;justify-content:center;color:#c0b0a0;font-size:20px;margin:0 auto">?</div>';
-    const isDefault = defaultMoods.includes(m.mood);
+    const btnText = hasImg ? '替换' : '上传';
     grid.innerHTML += '' +
       '<div class="char-mood-box" style="position:relative">' +
-        (isDefault ? '' : '<span class="skill-card-del" onclick="event.stopPropagation();deleteCharMood(\''+name+'\',\''+m.mood+'\')">&times;</span>') +
+        '<span class="skill-card-del" onclick="event.stopPropagation();deleteCharMood(\''+name+'\',\''+m.mood+'\')">&times;</span>' +
         img +
-        '<div class="mood-label">'+esc(m.mood)+'</div>' +
+        '<div class="mood-label" style="cursor:pointer" onclick="event.stopPropagation();renameCharMood(\''+name+'\',\''+m.mood+'\')" title="点击重命名">'+esc(m.mood)+'</div>' +
         '<input type="file" accept="image/*" hidden onchange="uploadMood(this,\''+name+'\',\''+m.mood+'\')" id="moodFile_'+m.mood+'">' +
-        '<span class="char-mood-upload" onclick="document.getElementById(\'moodFile_'+m.mood+'\').click()">上传</span>' +
+        '<span class="char-mood-upload" onclick="document.getElementById(\'moodFile_'+m.mood+'\').click()">'+btnText+'</span>' +
       '</div>';
   }
   grid.innerHTML += '' +
@@ -1078,6 +1077,12 @@ async function addCharMood(name) {
 async function deleteCharMood(name, mood) {
   if (!confirm('确定删除情绪 "'+mood+'" ？')) return;
   await pywebview.api.delete_character_mood(name, mood);
+  showCharDetail(name);
+}
+async function renameCharMood(name, oldMood) {
+  const newMood = prompt('新情绪名称：', oldMood);
+  if (!newMood || !newMood.trim() || newMood.trim() === oldMood) return;
+  await pywebview.api.rename_character_mood(name, oldMood, newMood.trim());
   showCharDetail(name);
 }
 function previewMood(url) {

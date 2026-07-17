@@ -115,6 +115,15 @@ def delete_mood_image(name: str, mood: str):
             return
 
 
+def rename_mood_image(name: str, old_mood: str, new_mood: str):
+    dir = _BASE_DIR / name
+    for ext in ("png", "jpg", "jpeg", "gif", "svg"):
+        src = dir / f"{old_mood}.{ext}"
+        if src.exists():
+            src.rename(dir / f"{new_mood}.{ext}")
+            return
+
+
 def _get_mood_data(name: str, mood: str) -> str:
     for ext in ("png", "jpg", "jpeg", "gif", "svg"):
         p = _BASE_DIR / name / f"{mood}.{ext}"

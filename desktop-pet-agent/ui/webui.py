@@ -350,6 +350,10 @@ class Api:
         from character import registry as cr
         cr.delete_mood_image(name, mood)
 
+    def rename_character_mood(self, name: str, old_mood: str, new_mood: str):
+        from character import registry as cr
+        cr.rename_mood_image(name, old_mood, new_mood)
+
     def get_character_soul(self, name: str) -> str:
         from character import registry as cr
         return cr.get_soul(name)
