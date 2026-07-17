@@ -86,12 +86,33 @@ def save_soul(name: str, text: str):
 
 
 def get_moods(name: str) -> list[dict]:
+    seen = set()
     result = []
+    # 先加预定义的 5 个，保证顺序
     for mood in MOODS:
         data_url = _get_mood_data(name, mood)
-        has_image = bool(data_url)
-        result.append({"mood": mood, "hasImage": has_image, "dataUrl": data_url or ""})
+        seen.add(mood)
+        result.append({"mood": mood, "hasImage": bool(data_url), "dataUrl": data_url or ""})
+    # 再加目录里自定义的
+    dir = _BASE_DIR / name
+    if dir.is_dir():
+        for f in sorted(dir.iterdir()):
+            stem = f.stem
+            if stem not in seen and f.suffix.lower() in (".png", ".jpg", ".jpeg", ".gif", ".svg"):
+                seen.add(stem)
+                raw = f.read_bytes()
+                mime = "image/svg+xml" if f.suffix.lower() == ".svg" else f"image/{f.suffix[1:].lower()}"
+                result.append({"mood": stem, "hasImage": True, "dataUrl": f"data:{mime};base64,{base64.b64encode(raw).decode()}"})
     return result
+
+
+def delete_mood_image(name: str, mood: str):
+    dir = _BASE_DIR / name
+    for ext in ("png", "jpg", "jpeg", "gif", "svg"):
+        p = dir / f"{mood}.{ext}"
+        if p.exists():
+            p.unlink()
+            return
 
 
 def _get_mood_data(name: str, mood: str) -> str:

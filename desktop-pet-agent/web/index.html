@@ -984,18 +984,26 @@ async function showCharDetail(name) {
   document.getElementById('charSetActiveBtn').style.display = 'inline-block';
   document.getElementById('charModal').classList.add('show');
   const moods = JSON.parse(await pywebview.api.get_character_moods(name));
+  const defaultMoods = ['默认','高兴','伤心','生气','思考'];
   const grid = document.getElementById('charMoodGrid'); grid.innerHTML = '';
   for (const m of moods) {
     const hasImg = !!m.dataUrl;
     const img = hasImg ? '<img src="'+m.dataUrl+'" style="cursor:pointer" onclick="previewMood(\''+m.dataUrl+'\')">' : '<div style="width:80px;height:80px;display:flex;align-items:center;justify-content:center;color:#c0b0a0;font-size:20px;margin:0 auto">?</div>';
+    const isDefault = defaultMoods.includes(m.mood);
     grid.innerHTML += '' +
-      '<div class="char-mood-box">' +
+      '<div class="char-mood-box" style="position:relative">' +
+        (isDefault ? '' : '<span class="skill-card-del" onclick="event.stopPropagation();deleteCharMood(\''+name+'\',\''+m.mood+'\')">&times;</span>') +
         img +
         '<div class="mood-label">'+esc(m.mood)+'</div>' +
         '<input type="file" accept="image/*" hidden onchange="uploadMood(this,\''+name+'\',\''+m.mood+'\')" id="moodFile_'+m.mood+'">' +
         '<span class="char-mood-upload" onclick="document.getElementById(\'moodFile_'+m.mood+'\').click()">上传</span>' +
       '</div>';
   }
+  grid.innerHTML += '' +
+    '<div class="char-mood-box" style="display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;border:2px dashed #d0c0a8" onclick="addCharMood(\''+name+'\')">' +
+      '<span style="font-size:28px;color:#c0b0a0;line-height:1">+</span>' +
+      '<span style="font-size:11px;color:#a08c78;margin-top:4px">添加情绪</span>' +
+    '</div>';
   const soul = await pywebview.api.get_character_soul(name);
   document.getElementById('charSoulInput').value = soul;
 }
@@ -1048,6 +1056,29 @@ async function renameChar(name) {
   if (!newName || !newName.trim() || newName.trim() === name) return;
   await pywebview.api.rename_character(name, newName.trim());
   loadChars();
+}
+async function addCharMood(name) {
+  const moodName = prompt('情绪名称（如：惊讶、害羞）：');
+  if (!moodName || !moodName.trim()) return;
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = 'image/*';
+  inp.onchange = async function(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async function(ev) {
+      await pywebview.api.save_character_mood(name, moodName.trim(), ev.target.result);
+      showCharDetail(name);
+    };
+    reader.readAsDataURL(file);
+  };
+  inp.click();
+}
+async function deleteCharMood(name, mood) {
+  if (!confirm('确定删除情绪 "'+mood+'" ？')) return;
+  await pywebview.api.delete_character_mood(name, mood);
+  showCharDetail(name);
 }
 function previewMood(url) {
   if (!url) return;

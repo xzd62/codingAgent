@@ -346,6 +346,10 @@ class Api:
         from character import registry as cr
         cr.save_mood_image(name, mood, data_url)
 
+    def delete_character_mood(self, name: str, mood: str):
+        from character import registry as cr
+        cr.delete_mood_image(name, mood)
+
     def get_character_soul(self, name: str) -> str:
         from character import registry as cr
         return cr.get_soul(name)
