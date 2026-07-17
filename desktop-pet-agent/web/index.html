@@ -1042,6 +1042,8 @@ async function renameChar(name) {
   const newName = prompt('输入新名称：', name);
   if (!newName || !newName.trim() || newName.trim() === name) return;
   await pywebview.api.rename_character(name, newName.trim());
+  _charModalName = newName.trim();
+  document.getElementById('charModalTitle').textContent = _charModalName + ' ✎';
   loadChars();
 }
 async function addCharMood(name) {
