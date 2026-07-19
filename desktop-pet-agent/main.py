@@ -18,6 +18,8 @@ import tool.load_skill
 import tool.create_task_list
 import tool.check_step
 import tool.ask_user
+import tool.write_note
+import tool.search_notes
 import tool.mcp_client
 
 from ui.webui import run

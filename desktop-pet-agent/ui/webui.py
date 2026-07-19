@@ -350,6 +350,29 @@ class Api:
         from config.settings import get_active_character
         return get_active_character()
 
+    def list_notes(self) -> str:
+        from note.store import NoteStore
+        return json.dumps(NoteStore().list(), ensure_ascii=False)
+
+    def get_note(self, note_id: int) -> str:
+        from note.store import NoteStore
+        note = NoteStore().get(note_id)
+        return json.dumps(note, ensure_ascii=False) if note else "null"
+
+    def save_note(self, note_id: int, title: str, content: str) -> dict:
+        from note.store import NoteStore
+        store = NoteStore()
+        if note_id > 0:
+            store.update(note_id, title, content)
+        else:
+            note_id = store.create(content, title)
+        return {"success": True, "note_id": note_id}
+
+    def delete_note(self, note_id: int) -> dict:
+        from note.store import NoteStore
+        NoteStore().delete(note_id)
+        return {"success": True}
+
 
 def _start_tray(window):
     def on_open():

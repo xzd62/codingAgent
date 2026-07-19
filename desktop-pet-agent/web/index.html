@@ -162,6 +162,10 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
       <svg class="icon" viewBox="0 0 18 18" fill="none"><path d="M9 1l1.5 4.5L15 7l-4.5 1.5L9 13l-1.5-4.5L3 7l4.5-1.5L9 1z" stroke="currentColor" stroke-width="1.2"/><circle cx="9" cy="9" r="3.5" stroke="currentColor" stroke-width="1.2"/></svg>
       技能
     </button>
+    <button class="nav-item" onclick="switchPage('note',this)">
+      <svg class="icon" viewBox="0 0 18 18" fill="none"><path d="M4 2h10a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="currentColor" stroke-width="1.5"/><path d="M6 6h6M6 9h6M6 12h4" stroke="currentColor" stroke-width="1.5"/></svg>
+      笔记
+    </button>
     <button class="nav-item" onclick="switchPage('settings',this)">
       <svg class="icon" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M9 1v2M9 15v2M1 9h2M15 9h2M2.5 2.5l1.5 1.5M14 14l1.5 1.5M2.5 15.5l1.5-1.5M14 4l1.5-1.5" stroke="currentColor" stroke-width="1.5"/></svg>
       设置
@@ -336,6 +340,35 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
       </div>
     </div>
   </div>
+
+  <div class="page" id="pageNote">
+    <div class="header"><h2>笔记</h2></div>
+    <div class="settings-body">
+      <div class="skill-grid" id="noteGrid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 笔记详情弹窗 -->
+<div class="modal-overlay" id="noteModal" onclick="hideNoteDetail(event)">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="noteModalTitle">笔记</h3>
+      <div>
+        <button class="btn btn-secondary" id="noteEditBtn" onclick="toggleNoteEdit()" style="margin-right:8px;font-size:12px">编辑</button>
+        <button class="modal-close" onclick="hideNoteDetail()">&times;</button>
+      </div>
+    </div>
+    <div class="modal-body" id="noteModalBody" style="white-space:pre-wrap"></div>
+    <div id="noteEditForm" style="display:none;flex-direction:column;padding:14px 22px;gap:10px">
+      <input type="text" id="noteEditTitle" placeholder="标题" style="width:100%;padding:8px 10px;border:1px solid #e8d8c4;border-radius:6px;font-size:13px;font-family:inherit;outline:none">
+      <textarea id="noteEditContent" placeholder="笔记内容" style="width:100%;min-height:180px;padding:10px;border:1px solid #e8d8c4;border-radius:6px;font-size:13px;font-family:inherit;resize:vertical;outline:none"></textarea>
+    </div>
+    <div id="noteSaveRow" style="display:none;padding:12px 22px;border-top:1px solid #e8d8c4;gap:8px;justify-content:flex-end">
+      <button class="btn btn-primary" onclick="saveNoteEdit()">保存</button>
+      <button class="btn btn-secondary" onclick="hideNoteDetail()">取消</button>
+    </div>
+  </div>
 </div>
 
 <!-- 宠物面板 -->
@@ -410,6 +443,7 @@ function switchPage(name, btn) {
   if (name === 'settings') loadSettings();
   if (name === 'mcp') loadMcpStatus();
   if (name === 'skill') loadSkills();
+  if (name === 'note') loadNotes();
 }
 
 function appendMsg(role, content) {
@@ -1075,6 +1109,97 @@ function previewMood(url) {
   img.style.cssText = 'max-width:90vw;max-height:90vh;border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,0.3)';
   overlay.appendChild(img);
   document.body.appendChild(overlay);
+}
+
+// ---- 笔记 ----
+let _noteModalId = 0;
+async function loadNotes() {
+  const data = JSON.parse(await pywebview.api.list_notes());
+  const grid = document.getElementById('noteGrid'); grid.innerHTML = '';
+  for (const n of data) {
+    const title = esc(n.title || '未命名笔记');
+    const preview = esc((n.content || '').slice(0, 120));
+    const date = (n.created_at || '').slice(0, 10);
+    grid.innerHTML += '' +
+      '<div class="skill-card" onclick="showNoteDetail(' + n.id + ')">' +
+        '<span class="skill-card-del" onclick="event.stopPropagation();deleteNoteById(' + n.id + ')">&times;</span>' +
+        '<div class="skill-card-name">' + title + '</div>' +
+        '<div class="skill-card-preview" style="margin-top:6px">' + preview + '</div>' +
+        '<div class="skill-card-footer">' +
+          '<span style="font-size:11px;color:#a08c78">' + date + '</span>' +
+        '</div>' +
+      '</div>';
+  }
+  grid.innerHTML += '' +
+    '<div class="skill-card skill-card-add" onclick="showNewNote()">' +
+      '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:6px;color:#c0b0a0">' +
+        '<span style="font-size:28px;line-height:1">+</span>' +
+        '<span style="font-size:13px">新建笔记</span>' +
+      '</div>' +
+    '</div>';
+}
+async function showNoteDetail(id) {
+  _noteModalId = id;
+  const n = JSON.parse(await pywebview.api.get_note(id));
+  if (!n) return;
+  document.getElementById('noteModalTitle').textContent = n.title || '未命名笔记';
+  document.getElementById('noteModalBody').textContent = n.content || '';
+  document.getElementById('noteEditTitle').value = n.title || '';
+  document.getElementById('noteEditContent').value = n.content || '';
+  document.getElementById('noteEditBtn').textContent = '编辑';
+  document.getElementById('noteEditBtn').style.display = 'inline-block';
+  document.getElementById('noteModalBody').style.display = 'block';
+  document.getElementById('noteEditForm').style.display = 'none';
+  document.getElementById('noteSaveRow').style.display = 'none';
+  document.getElementById('noteModal').classList.add('show');
+}
+function showNewNote() {
+  _noteModalId = 0;
+  document.getElementById('noteModalTitle').textContent = '新建笔记';
+  document.getElementById('noteModalBody').style.display = 'none';
+  document.getElementById('noteEditTitle').value = '';
+  document.getElementById('noteEditContent').value = '';
+  document.getElementById('noteEditForm').style.display = 'flex';
+  document.getElementById('noteSaveRow').style.display = 'flex';
+  document.getElementById('noteEditBtn').style.display = 'none';
+  document.getElementById('noteModal').classList.add('show');
+  document.getElementById('noteEditTitle').focus();
+}
+function hideNoteDetail(event) {
+  if (event && event.target !== document.getElementById('noteModal')) return;
+  document.getElementById('noteModal').classList.remove('show');
+  document.getElementById('noteEditBtn').style.display = 'inline-block';
+}
+function toggleNoteEdit() {
+  const body = document.getElementById('noteModalBody');
+  const form = document.getElementById('noteEditForm');
+  const row = document.getElementById('noteSaveRow');
+  const btn = document.getElementById('noteEditBtn');
+  if (body.style.display === 'none') {
+    body.style.display = 'block';
+    form.style.display = 'none';
+    row.style.display = 'none';
+    btn.textContent = '编辑';
+  } else {
+    body.style.display = 'none';
+    form.style.display = 'flex';
+    row.style.display = 'flex';
+    btn.textContent = '取消';
+  }
+}
+async function saveNoteEdit() {
+  const title = document.getElementById('noteEditTitle').value.trim();
+  const content = document.getElementById('noteEditContent').value.trim();
+  if (!content) return;
+  await pywebview.api.save_note(_noteModalId, title, content);
+  document.getElementById('noteModal').classList.remove('show');
+  document.getElementById('noteEditBtn').style.display = 'inline-block';
+  loadNotes();
+}
+async function deleteNoteById(id) {
+  if (!confirm('确定删除这条笔记？')) return;
+  await pywebview.api.delete_note(id);
+  loadNotes();
 }
 
 // ---- 权限 ----
